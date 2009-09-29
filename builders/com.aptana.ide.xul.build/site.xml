@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site pack200="true" digestURL="http://update.aptana.com/update/xul/"> 
+	<description url="http://update.aptana.com/update/xul/">Aptana XULRunner</description>
+	<feature url="features/com.aptana.ide.feature.xul_{version.full}.jar" id="com.aptana.ide.feature.xul" version="{version.full}">
+		<category name="XUL"/>
+	</feature>
+	<category-def name="XUL" label="Aptana XULRunner">
+        <description>Adds support for XULRunner.</description>
+	</category-def>
+</site>
