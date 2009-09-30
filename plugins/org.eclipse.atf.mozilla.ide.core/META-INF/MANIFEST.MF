@@ -10,4 +10,5 @@ Export-Package: org.eclipse.atf.mozilla.ide.core
 Require-Bundle: org.mozilla.xpcom,org.eclipse.core.runtime
 Bundle-Version: 0.2.1.v200703161053
 Eclipse-LazyStart: true
+Bundle-ActivationPolicy: lazy
 
