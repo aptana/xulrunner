@@ -139,8 +139,36 @@
 	<!-- ===================================================================== -->
 	<target name="postBuild">
 		<antcall target="gatherLogs" />
+		<antcall target="fix.broken.metadata" />
 		<antcall target="updateSite" />
 		<antcall target="publish" />
+	</target>
+	
+	<!-- Workaround for Eclipse bug: https://bugs.eclipse.org/bugs/show_bug.cgi?id=271373 -->
+	<target name="fix.broken.metadata">
+		<!-- Unzip the content.jar -->
+		<unzip dest="${p2.repo.dir}" src="${p2.repo.dir}/content.jar" />
+		<delete file="${p2.repo.dir}/content.jar" />
+		<!-- Fix the broken OSGi filter syntax -->
+		<replace summary="yes" file="${p2.repo.dir}/content.xml">
+			<replacetoken><![CDATA[(osgi.arch=x86,x86_64)]]></replacetoken>
+			<replacevalue><![CDATA[(| (osgi.arch=x86)(osgi.arch=x86_64))]]></replacevalue>
+		</replace>
+		<replace summary="yes" file="${p2.repo.dir}/content.xml">
+			<replacetoken><![CDATA[(osgi.os=macosx,win32)]]></replacetoken>
+			<replacevalue><![CDATA[(| (osgi.os=macosx)(osgi.os=win32))]]></replacevalue>
+		</replace>
+		<replace summary="yes" file="${p2.repo.dir}/content.xml">
+			<replacetoken><![CDATA[(osgi.os=aix,hpux,linux,qnx,solaris)]]></replacetoken>
+			<replacevalue><![CDATA[(| (osgi.os=aix)(osgi.os=hpux)(osgi.os=linux)(osgi.os=qnx)(osgi.os=solaris))]]></replacevalue>
+		</replace>
+		<!-- Re-zip content.xml into content.jar -->
+		<zip destfile="${p2.repo.dir}/content.jar">
+			<zipfileset dir="${p2.repo.dir}">
+				<include name="content.xml" />
+			</zipfileset>
+		</zip>
+		<delete file="${p2.repo.dir}/content.xml" />
 	</target>
 
 	<target name="updateSite">
