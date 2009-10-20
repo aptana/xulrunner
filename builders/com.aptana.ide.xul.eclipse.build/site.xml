@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site pack200="true"> 
+    <description url="http://download.aptana.org/tools/studio/plugin/update/xul-eclipse/">Mozilla Update Site</description> 
+	<feature url="features/org.mozilla.xpcom.feature_{org.mozilla.xpcom.feature.version.full}.jar" id="org.mozilla.xpcom.feature" version="{org.mozilla.xpcom.feature.version.full}">
+		<category name="Mozilla XPCOM for Java"/>
+	</feature>
+    <feature url="features/org.mozilla.xulrunner.feature_{org.mozilla.xulrunner.feature.version.full}.jar" id="org.mozilla.xulrunner.feature" version="{org.mozilla.xulrunner.feature.version.full}">
+		<category name="Mozilla Xulrunner"/>
+	</feature>
+    <category-def name="Mozilla XUL" label="Mozilla XUL">
+        <description>Adds Mozilla XUL support</description>
+    </category-def>
+</site>
