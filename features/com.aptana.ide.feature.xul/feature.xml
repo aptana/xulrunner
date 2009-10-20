@@ -30,6 +30,7 @@
       <import plugin="org.eclipse.core.resources"/>
       <import plugin="org.eclipse.ui.console"/>
       <import plugin="org.eclipse.ui.ide"/>
+      <import feature="com.aptana.ide.feature.xul.eclipse" version="2.0.0" match="greaterOrEqual"/>
       <import plugin="org.mozilla.xpcom"/>
    </requires>
 
