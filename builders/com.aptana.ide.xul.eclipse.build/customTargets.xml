@@ -153,10 +153,7 @@
 		<copy file="${builder}/site.xml" tofile="${p2.repo.dir}/site.xml" />
         <!-- TODO Make this more dynamic so it picks up the feature id's on it's own -->
         <antcall target="insert.version">
-            <param name="feature.id" value="org.mozilla.xpcom.feature" />
-        </antcall>
-        <antcall target="insert.version">
-            <param name="feature.id" value="org.mozilla.xulrunner.feature" />
+            <param name="feature.id" value="com.aptana.ide.feature.xul.eclipse" />
         </antcall>
 		<copy file="${builder}/index.html" tofile="${p2.repo.dir}/index.html" />
 	</target>
