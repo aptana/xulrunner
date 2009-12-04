@@ -45,6 +45,8 @@ import org.mozilla.interfaces.nsIDOMHTMLScriptElement;
 import org.mozilla.interfaces.nsIDOMNode;
 import org.mozilla.interfaces.nsIDOMSerializer;
 import org.mozilla.interfaces.nsIDOMWindow;
+import org.mozilla.interfaces.nsIPrefBranch;
+import org.mozilla.interfaces.nsIPrefService;
 import org.mozilla.interfaces.nsIScriptError;
 import org.mozilla.interfaces.nsISupports;
 import org.mozilla.interfaces.nsIWebBrowser;
@@ -275,6 +277,11 @@ public class FirefoxBrowser extends ContributedBrowser
 		{
 			IdeLog.logError(Activator.getDefault(), Messages.getString("FirefoxBrowser.Error_Setting_Path"), e); //$NON-NLS-1$
 		}
+		// Disable Java
+		nsIPrefService prefService = (nsIPrefService) Mozilla.getInstance().getServiceManager().getServiceByContractID("@mozilla.org/preferences-service;1", nsIPrefService.NS_IPREFSERVICE_IID);
+		nsIPrefBranch prefBranch = prefService.getBranch("");
+		prefBranch.setBoolPref("security.enable_java", 0);
+
 		browser = new Browser(parent, nativeMozillaField);
 		((Browser) browser).addProgressListener(progressListener);
 		((Browser) browser).addOpenWindowListener(openWindowListener);
