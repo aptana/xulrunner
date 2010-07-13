@@ -36,6 +36,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 @namespace url(http://www.w3.org/1999/xhtml); /* set default namespace to HTML */
+@namespace xul url(http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul);
 
 /* bidi */
 
@@ -90,8 +91,8 @@ center {
 blockquote[type=cite] {
   display: block;
   margin: 1em 0px;
-  padding-left: 1em;
-  border-left: solid;
+  -moz-padding-start: 1em;
+  -moz-border-start: solid;
   border-color: blue;
   border-width: thin;
 }
@@ -168,6 +169,7 @@ table {
   border-collapse: separate;
   margin-top: 0;
   margin-bottom: 0;
+  /* XXXldb do we want this if we're border-collapse:collapse ? */
   -moz-box-sizing: border-box;
   text-indent: 0;
 }
@@ -252,6 +254,13 @@ th {
   padding: 1px;
 }
 
+tr > form:-moz-is-html, tbody > form:-moz-is-html,
+thead > form:-moz-is-html, tfoot > form:-moz-is-html,
+table > form:-moz-is-html {
+  /* Important: don't show these forms in HTML */
+  display: none !important;
+}
+
 /* inlines */
 
 q:before {
@@ -333,7 +342,6 @@ ol {
 
 li {
   display: list-item;
-  -moz-float-edge: margin-box;
 }
 
 /* nested lists have no top/bottom margins */
@@ -378,14 +386,15 @@ dir ol dir,   dir ul dir,   dir menu dir,   dir dir dir {
 hr {
   display: block;
   height: 2px;
-  border: 1px -moz-bg-inset;
+  border: 1px inset;
   margin: 0.5em auto 0.5em auto;
+  color: gray;
   -moz-float-edge: margin-box;
   -moz-box-sizing: border-box;
 }
 
 hr[size="1"] {
-  border-style: -moz-bg-solid none none none;
+  border-style: solid none none none;
 }
 
 *|*:-moz-any-link img, img[usemap], object[usemap] {
@@ -398,6 +407,7 @@ img:-moz-loading::before, input:-moz-loading::before,
 applet:-moz-empty-except-children-with-localname(param):-moz-broken::before,
 applet:-moz-empty-except-children-with-localname(param):-moz-user-disabled::before {
   content: -moz-alt-content !important;
+  unicode-bidi: embed;
 }
 
 object:-moz-broken > *|*, applet:-moz-broken > *|*
@@ -424,7 +434,6 @@ embed:-moz-suppressed, applet:-moz-suppressed {
 }
 
 img[usemap], object[usemap] {
-  cursor: pointer;
   color: blue;
 }
 
@@ -469,7 +478,8 @@ object:focus, ol:focus, p:focus, pre:focus, q:focus, s:focus, samp:focus,
 small:focus, span:focus, strike:focus, strong:focus, sub:focus, sup:focus, 
 table:focus, tbody:focus, td:focus, tfoot:focus, th:focus, thead:focus, 
 tr:focus, tt:focus, u:focus, ul:focus, var:focus {
-   outline: 1px dotted invert;
+  /* Don't specify the outline-color, we should always use initial value. */
+   outline: 1px dotted;
 }
 
 /* hidden elements */
@@ -478,9 +488,28 @@ noembed, param {
    display: none;
 }
 
+/* media elements */
+video > xul|videocontrols, audio > xul|videocontrols {
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-binding: url("chrome://global/content/bindings/videocontrols.xml#videoControls");
+}
+
+video:not([controls]) > xul|videocontrols,
+audio:not([controls]) > xul|videocontrols {
+  visibility: hidden;
+}
+
+audio:not([controls]) {
+  display: none;
+}
+
 /* emulation of non-standard HTML <marquee> tag */
 marquee {
-  display: block;
+  width: -moz-available;
+  display: inline-block;
+  vertical-align: text-bottom;
+  text-align: start;
   -moz-binding: url('chrome://xbl-marquee/content/xbl-marquee.xml#marquee-horizontal');
 }
 
@@ -494,10 +523,4 @@ marquee[direction="up"], marquee[direction="down"] {
 
   marquee { -moz-binding: none; }
 
-  /* XXX this should not be necessary, we should be stopping blinking
-     of any kind in print preview, not just the <blink> element */
-  blink {
-    text-decoration: none;
-  }
- 
 }

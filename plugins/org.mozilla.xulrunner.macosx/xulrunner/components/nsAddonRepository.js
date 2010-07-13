@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /*
-//@line 38 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/toolkit/mozapps/extensions/src/nsAddonRepository.js"
+//@line 38 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/mozapps/extensions/src/nsAddonRepository.js"
 */
 
 const Cc = Components.classes;
@@ -17,7 +17,7 @@ const PREF_GETADDONS_GETSEARCHRESULTS    = "extensions.getAddons.search.url";
 
 const XMLURI_PARSE_ERROR  = "http://www.mozilla.org/newlayout/xml/parsererror.xml";
 
-const API_VERSION = "1.1";
+const API_VERSION = "1.2";
 
 function AddonSearchResult() {
 }
@@ -138,7 +138,8 @@ AddonRepository.prototype = {
 
     var uri = prefs.getCharPref(PREF_GETADDONS_GETSEARCHRESULTS);
     uri = uri.replace(/%API_VERSION%/g, API_VERSION);
-    uri = uri.replace(/%TERMS%/g, encodeURIComponent(aSearchTerms));
+    // We double encode due to bug 427155
+    uri = uri.replace(/%TERMS%/g, encodeURIComponent(encodeURIComponent(aSearchTerms)));
     uri = urlf.formatURL(uri);
     this._loadList(uri);
   },

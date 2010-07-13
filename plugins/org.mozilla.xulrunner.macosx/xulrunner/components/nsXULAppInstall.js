@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-//@line 41 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 41 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/xulrunner/setup/nsXULAppInstall.js"
 
 const nsIFile             = Components.interfaces.nsIFile;
 const nsIINIParser        = Components.interfaces.nsIINIParser;
@@ -193,11 +193,11 @@ const AppInstall = {
     catch (e) { }
 
     if (aDirectory == null) {
-//@line 240 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 240 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/xulrunner/setup/nsXULAppInstall.js"
       aDirectory = getDirectoryKey("LocApp");
       if (vendor)
         aDirectory.append(vendor);
-//@line 251 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 251 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/xulrunner/setup/nsXULAppInstall.js"
     }
     else {
       aDirectory = aDirectory.clone();
@@ -208,9 +208,9 @@ const AppInstall = {
     }
 
     if (aLeafName == "") {
-//@line 262 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 262 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/xulrunner/setup/nsXULAppInstall.js"
       aLeafName = appName + ".app";
-//@line 270 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 270 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/xulrunner/setup/nsXULAppInstall.js"
     }
 
     aDirectory.append(aLeafName);
@@ -218,7 +218,7 @@ const AppInstall = {
       aDirectory.create(nsIFile.DIRECTORY_TYPE, 0755);
     }
 
-//@line 278 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 278 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/xulrunner/setup/nsXULAppInstall.js"
     aDirectory.append("Contents");
     if (!aDirectory.exists()) {
       aDirectory.create(nsIFile.DIRECTORY_TYPE, 0755);
@@ -281,7 +281,7 @@ const AppInstall = {
 
     aDirectory.append("Resources");
     extractor.copyTo(aDirectory);
-//@line 348 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 348 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/xulrunner/setup/nsXULAppInstall.js"
   }
 };
 

@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-//@line 41 "/cygdrive/c/Workspace/mozilla-x64/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 41 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
 
 const nsIFile             = Components.interfaces.nsIFile;
 const nsIINIParser        = Components.interfaces.nsIINIParser;
@@ -7,7 +7,6 @@ const nsIINIParserFactory = Components.interfaces.nsIINIParserFactory;
 const nsILocalFile        = Components.interfaces.nsILocalFile;
 const nsISupports         = Components.interfaces.nsISupports;
 const nsIXULAppInstall    = Components.interfaces.nsIXULAppInstall;
-const nsIZipEntry         = Components.interfaces.nsIZipEntry;
 const nsIZipReader        = Components.interfaces.nsIZipReader;
 
 function getDirectoryKey(aKey) {
@@ -93,8 +92,7 @@ directoryExtractor.prototype = {
 function zipExtractor(aFile) {
   this.mZipReader = Components.classes["@mozilla.org/libjar/zip-reader;1"].
     createInstance(nsIZipReader);
-  this.mZipReader.init(aFile);
-  this.mZipReader.open();
+  this.mZipReader.open(aFile);
   this.mZipReader.test(null);
 }
 
@@ -129,11 +127,11 @@ zipExtractor.prototype = {
   },
 
   copyTo : function ze_CopyTo(aDest) {
-    var entries = this.mZipReader.findEntries("*");
-    while (entries.hasMoreElements()) {
-      var entry = entries.getNext().QueryInterface(nsIZipEntry);
+    var entries = this.mZipReader.findEntries(null);
+    while (entries.hasMore()) {
+      var entryName = entries.getNext();
 
-      this._installZipEntry(this.mZipReader, entry, aDest);
+      this._installZipEntry(this.mZipReader, entryName, aDest);
     }
   },
 
@@ -141,9 +139,8 @@ zipExtractor.prototype = {
                                                  aDestination) {
     var file = aDestination.clone();
 
-    var path = aZipEntry.name;
-    var dirs = path.split(/\//);
-    var isDirectory = path.match(/\/$/) != null;
+    var dirs = aZipEntry.split(/\//);
+    var isDirectory = /\/$/.test(aZipEntry);
 
     var end = dirs.length;
     if (!isDirectory)
@@ -158,7 +155,7 @@ zipExtractor.prototype = {
 
     if (!isDirectory) {
       file.append(dirs[end]);
-      aZipReader.extract(path, file);
+      aZipReader.extract(aZipEntry, file);
     }
   }
 };
@@ -196,11 +193,11 @@ const AppInstall = {
     catch (e) { }
 
     if (aDirectory == null) {
-//@line 238 "/cygdrive/c/Workspace/mozilla-x64/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 235 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
       aDirectory = getDirectoryKey("ProgF");
       if (vendor)
         aDirectory.append(vendor);
-//@line 254 "/cygdrive/c/Workspace/mozilla-x64/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 251 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
     }
     else {
       aDirectory = aDirectory.clone();
@@ -211,9 +208,9 @@ const AppInstall = {
     }
 
     if (aLeafName == "") {
-//@line 268 "/cygdrive/c/Workspace/mozilla-x64/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 265 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
       aLeafName = appName;
-//@line 273 "/cygdrive/c/Workspace/mozilla-x64/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 270 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
     }
 
     aDirectory.append(aLeafName);
@@ -221,14 +218,14 @@ const AppInstall = {
       aDirectory.create(nsIFile.DIRECTORY_TYPE, 0755);
     }
 
-//@line 344 "/cygdrive/c/Workspace/mozilla-x64/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 341 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
     extractor.copyTo(aDirectory);
 
     var xulrunnerBinary = getDirectoryKey("XCurProcD");
     xulrunnerBinary.append("xulrunner-stub.exe");
 
     xulrunnerBinary.copyTo(aDirectory, appName.toLowerCase() + ".exe");
-//@line 351 "/cygdrive/c/Workspace/mozilla-x64/mozilla/xulrunner/setup/nsXULAppInstall.js"
+//@line 348 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
   }
 };
 

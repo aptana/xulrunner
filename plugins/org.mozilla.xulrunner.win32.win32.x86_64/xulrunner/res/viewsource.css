@@ -48,7 +48,8 @@
   white-space: pre;
 }
 #viewsource.wrap {
-  white-space: -moz-pre-wrap;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 pre {
   font: inherit;

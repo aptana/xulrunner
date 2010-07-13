@@ -113,6 +113,9 @@ pref("browser.display.focus_background_color", "#117722");
 pref("browser.display.focus_text_color",     "#ffffff");
 pref("browser.display.focus_ring_width",     1);
 pref("browser.display.focus_ring_on_anything", false);
+// focus ring border style.
+// 0 = solid border, 1 = dotted border
+pref("browser.display.focus_ring_style", 1);
 
 pref("browser.helperApps.alwaysAsk.force",  false);
 pref("browser.helperApps.neverAsk.saveToDisk", "");
@@ -128,16 +131,37 @@ pref("browser.chrome.image_icons.max_size", 1024);
 
 pref("browser.triple_click_selects_paragraph", true);
 
-pref("gfx.color_management.enabled", false);
+// When loading <video> or <audio>, check for Access-Control-Allow-Origin
+// header, and disallow the connection if not present or permitted.
+pref("media.enforce_same_site_origin", false);
+
+// Media cache size in kilobytes
+pref("media.cache_size", 51200);
+
+//@line 142 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
+pref("media.ogg.enabled", true);
+//@line 145 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
+pref("media.wave.enabled", true);
+//@line 147 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
+
+// Whether to autostart a media element with an |autoplay| attribute
+pref("media.autoplay.enabled", true);
+
+// 0 = Off, 1 = Full, 2 = Tagged Images Only. 
+// See eCMSMode in gfx/thebes/public/gfxPlatform.h
+pref("gfx.color_management.mode", 2);
 pref("gfx.color_management.display_profile", "");
+pref("gfx.color_management.rendering_intent", 0);
+
+pref("gfx.downloadable_fonts.enabled", true);
 
 pref("accessibility.browsewithcaret", false);
 pref("accessibility.warn_on_browsewithcaret", true);
 
-//@line 151 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 176 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 // Only on mac tabfocus is expected to handle UI widgets as well as web content
 pref("accessibility.tabfocus_applies_to_xul", true);
-//@line 154 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 179 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
 pref("accessibility.usetexttospeech", "");
 pref("accessibility.usebrailledisplay", "");
@@ -180,6 +204,11 @@ pref("toolkit.scrollbox.clickToScroll.scrollDelay", 150);
 // view source
 pref("view_source.syntax_highlight", true);
 pref("view_source.wrap_long_lines", false);
+pref("view_source.editor.external", false);
+pref("view_source.editor.path", "");
+// allows to add further arguments to the editor; use the %LINE% placeholder
+// for jumping to a specific line (e.g. "/line:%LINE%" or "--goto %LINE%")
+pref("view_source.editor.args", "");
 
 // dispatch left clicks only to content in browser (still allows clicks to chrome/xul)
 pref("nglayout.events.dispatchLeftClickOnly", true);
@@ -204,6 +233,9 @@ pref("browser.fixup.alternate.prefix", "www.");
 pref("browser.fixup.alternate.suffix", ".com");
 pref("browser.fixup.hide_user_pass", true);
 
+// Location Bar AutoComplete
+pref("browser.urlbar.autocomplete.enabled", true);
+
 // Print header customization
 // Use the following codes:
 // &T - Title
@@ -226,9 +258,6 @@ pref("print.show_print_progress", true);
 // When this is set to false each window has its own PrintSettings
 // and a change in one window does not affect the others
 pref("print.use_global_printsettings", true);
-
-// Use the native dialog or the XP dialog?
-pref("print.use_native_print_dialog", false);
 
 // Save the Printings after each print job
 pref("print.save_print_settings", true);
@@ -265,7 +294,7 @@ pref("print.print_edge_bottom", 0);
 pref("extensions.spellcheck.inline.max-misspellings", 500);
 
 // Prefs used by libeditor. Prefs specific to seamonkey composer
-// belong in mozilla/editor/ui/composer.js
+// belong in comm-central/editor/ui/composer.js
 
 pref("editor.use_custom_colors", false);
 pref("editor.htmlWrapColumn", 72);
@@ -350,6 +379,7 @@ pref("capability.policy.mailnews.*.substringData.get", "noAccess");
 pref("capability.policy.mailnews.*.text.get", "noAccess");
 pref("capability.policy.mailnews.*.textContent", "noAccess");
 pref("capability.policy.mailnews.*.title.get", "noAccess");
+pref("capability.policy.mailnews.*.wholeText", "noAccess");
 pref("capability.policy.mailnews.DOMException.toString", "noAccess");
 pref("capability.policy.mailnews.HTMLAnchorElement.toString", "noAccess");
 pref("capability.policy.mailnews.HTMLDocument.domain", "noAccess");
@@ -475,6 +505,13 @@ pref("dom.popup_allowed_events", "change click dblclick mouseup reset submit");
 pref("dom.disable_open_click_delay", 1000);
 
 pref("dom.storage.enabled", true);
+pref("dom.storage.default_quota",      5120);
+
+// Parsing perf prefs. For now just mimic what the old code did.
+pref("content.sink.event_probe_rate", 3);
+//@line 527 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
+pref("content.sink.pending_event_mode", 0);
+//@line 529 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
 // Disable popups from plugins by default
 //   0 = openAllowed
@@ -488,6 +525,8 @@ pref("javascript.enabled",                  true);
 pref("javascript.allow.mailnews",           false);
 pref("javascript.options.strict",           false);
 pref("javascript.options.relimit",          false);
+pref("javascript.options.jit.content",      true);
+pref("javascript.options.jit.chrome",       false);
 
 // advanced prefs
 pref("security.enable_java",                true);
@@ -517,9 +556,9 @@ pref("network.protocol-handler.external.data", false);
 pref("network.protocol-handler.external.ms-help", false);
 pref("network.protocol-handler.external.shell", false);
 pref("network.protocol-handler.external.vnd.ms.radio", false);
-//@line 534 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 574 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 pref("network.protocol-handler.external.help", false);
-//@line 536 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 576 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 pref("network.protocol-handler.external.disk", false);
 pref("network.protocol-handler.external.disks", false);
 pref("network.protocol-handler.external.afp", false);
@@ -610,6 +649,9 @@ pref("network.http.proxy.pipelining", false);
 // Max number of requests in the pipeline
 pref("network.http.pipelining.maxrequests" , 4);
 
+// Prompt for 307 redirects
+pref("network.http.prompt-temp-redirect", true);
+
 // </http>
 
 // If false, remote JAR files that are served with a content type other than
@@ -692,7 +734,7 @@ pref("network.IDN.whitelist.xn--zckzah", true);
 // attempt and so we always display the domain name as punycode. This would 
 // override the settings "network.IDN_show_punycode" and 
 // "network.IDN.whitelist.*".
-pref("network.IDN.blacklist_chars", "\u0020\u00A0\u00BC\u00BD\u01C3\u0337\u0338\u05C3\u05F4\u06D4\u0702\u115F\u1160\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u200B\u2024\u2027\u2028\u2029\u202F\u2039\u203A\u2044\u205F\u2154\u2155\u2156\u2159\u215A\u215B\u215F\u2215\u23AE\u29F6\u29F8\u2AFB\u2AFD\u2FF0\u2FF1\u2FF2\u2FF3\u2FF4\u2FF5\u2FF6\u2FF7\u2FF8\u2FF9\u2FFA\u2FFB\u3000\u3002\u3014\u3015\u3033\u3164\u321D\u321E\u33AE\u33AF\u33C6\u33DF\uFE14\uFE15\uFE3F\uFE5D\uFE5E\uFEFF\uFF0E\uFF0F\uFF61\uFFA0\uFFF9\uFFFA\uFFFB\uFFFC\uFFFD");
+pref("network.IDN.blacklist_chars", "\u0020\u00A0\u00BC\u00BD\u00BE\u01C3\u02D0\u0337\u0338\u0589\u05C3\u05F4\u0609\u060A\u066A\u06D4\u0701\u0702\u0703\u0704\u115F\u1160\u1735\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u200B\u2024\u2027\u2028\u2029\u202F\u2039\u203A\u2041\u2044\u2052\u205F\u2153\u2154\u2155\u2156\u2157\u2158\u2159\u215A\u215B\u215C\u215D\u215E\u215F\u2215\u2236\u23AE\u2571\u29F6\u29F8\u2AFB\u2AFD\u2FF0\u2FF1\u2FF2\u2FF3\u2FF4\u2FF5\u2FF6\u2FF7\u2FF8\u2FF9\u2FFA\u2FFB\u3000\u3002\u3014\u3015\u3033\u3164\u321D\u321E\u33AE\u33AF\u33C6\u33DF\uA789\uFE14\uFE15\uFE3F\uFE5D\uFE5E\uFEFF\uFF0E\uFF0F\uFF61\uFFA0\uFFF9\uFFFA\uFFFB\uFFFC\uFFFD");
 
 // This preference specifies a list of domains for which DNS lookups will be
 // IPv4 only. Works around broken DNS servers which can't handle IPv6 lookups
@@ -749,7 +791,7 @@ pref("network.negotiate-auth.gsslib", "");
 // Specify if the gss lib comes standard with the OS
 pref("network.negotiate-auth.using-native-gsslib", true);
 
-//@line 771 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 814 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
 // The following prefs are used to enable automatic use of the operating
 // system's NTLM implementation to silently authenticate the user with their
@@ -766,16 +808,11 @@ pref("network.automatic-ntlm-auth.trusted-uris", "");
 //       implementation will not be affected by this preference.
 pref("network.ntlm.send-lm-response", false);
 
-// sspitzer:  change this back to "news" when we get to beta.
-// for now, set this to news.mozilla.org because you can only
-// post to the server specified by this pref.
-pref("network.hosts.nntp_server",           "news.mozilla.org");
-
 pref("permissions.default.image",           1); // 1-Accept, 2-Deny, 3-dontAcceptForeign
 
-//@line 801 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 839 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 pref("network.proxy.type",                  0);
-//@line 803 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 841 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
 pref("network.proxy.ftp",                   "");
 pref("network.proxy.ftp_port",              0);
@@ -881,6 +918,9 @@ pref("mousewheel.transaction.timeout", 1500);
 // mouse wheel scroll transaction is held even if the mouse cursor is moved.
 pref("mousewheel.transaction.ignoremovedelay", 100);
 
+// Macbook touchpad two finger pixel scrolling
+pref("mousewheel.enable_pixel_scrolling", true);
+
 // 0=lines, 1=pages, 2=history , 3=text size
 pref("mousewheel.withnokey.action",0);
 pref("mousewheel.withnokey.numlines",1);	
@@ -969,6 +1009,8 @@ pref("bidi.controlstextmode", 1);
 // 2 = hindicontextnumeralBidi
 // 3 = arabicnumeralBidi
 // 4 = hindinumeralBidi
+// 5 = persiancontextnumeralBidi
+// 6 = persiannumeralBidi
 pref("bidi.numeral", 0);
 // ------------------
 //  Support Mode
@@ -994,6 +1036,11 @@ pref("bidi.edit.delete_immediately", false);
 // 2 = visual, but logical during selection
 pref("bidi.edit.caret_movement_style", 2);
 
+// Setting this pref to |true| forces Bidi UI menu items and keyboard shortcuts
+// to be exposed, and enables the directional caret hook. By default, only
+// expose it for bidi-associated system locales.
+pref("bidi.browser.ui", false);
+
 // used for double-click word selection behavior. Win will override.
 pref("layout.word_select.eat_space_to_next_word", false);
 pref("layout.word_select.stop_at_punctuation", true);
@@ -1018,6 +1065,21 @@ pref("layout.frames.force_resizability", false);
 
 // pref to report CSS errors to the error console
 pref("layout.css.report_errors", true);
+
+// Should the :visited selector ever match (otherwise :link matches instead)?
+pref("layout.css.visited_links_enabled", true);
+
+// Override DPI. A value of -1 means use the maximum of 96 and the system DPI.
+// A value of 0 means use the system DPI. A positive value is used as the DPI.
+// This sets the physical size of a device pixel and thus controls the
+// interpretation of physical units such as "pt".
+pref("layout.css.dpi", -1);
+
+// Set the number of device pixels per CSS pixel. A value <= 0 means choose
+// automatically based on the DPI. A positive value is used as-is. This effectively
+// controls the size of a CSS "px". This is only used for pixel-based
+// (screen) output devices.
+pref("layout.css.devPixelsPerPx", -1);
 
 // pref for which side vertical scrollbars should be on
 // 0 = end-side in UI direction
@@ -1053,6 +1115,9 @@ pref("config.use_system_prefs", false);
 // if the system has enabled accessibility
 pref("config.use_system_prefs.accessibility", false);
 
+// enable single finger gesture input (win7+ tablets)
+pref("gestures.enable_single_finger_input", true);
+
 /*
  * What are the entities that you want Mozilla to save using mnemonic
  * names rather than numeric codes? E.g. If set, we'll output &nbsp;
@@ -1072,7 +1137,8 @@ pref("config.use_system_prefs.accessibility", false);
 pref("editor.resizing.preserve_ratio",       true);
 pref("editor.positioning.offset",            0);
 
-pref("dom.max_chrome_script_run_time", 20);
+// Disable slow script warnings for chrome by default - bug 492410
+pref("dom.max_chrome_script_run_time", 0);
 pref("dom.max_script_run_time", 10);
 
 pref("svg.enabled", true);
@@ -1109,9 +1175,9 @@ pref("font.minimum-size.x-western", 0);
 pref("font.minimum-size.x-unicode", 0);
 pref("font.minimum-size.x-user-def", 0);
 
-//@line 1520 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 1582 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
-//@line 1522 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 1584 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 // Mac specific preference defaults
 pref("browser.drag_out_of_frame_style", 1);
 pref("ui.key.saveLink.shift", false); // true = shift, false = meta
@@ -1522,31 +1588,31 @@ pref("ui.key.contentAccess", 2);
 // around the content of the page for Print Preview only
 pref("print.print_extra_margin", 90); // twips (90 twips is an eigth of an inch)
 
-// This indicates whether it should use the native dialog or the XP Dialog
-pref("print.use_native_print_dialog", true);
+// See bug 404131, topmost <panel> element wins to Dashboard on MacOSX.
+pref("ui.panel.default_level_parent", false);
 
-//@line 1937 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 1999 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
-//@line 2134 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 2200 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
-//@line 2225 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 2294 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
-//@line 2490 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 2567 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
-//@line 2558 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 2635 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
-//@line 2584 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 2661 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
-//@line 2604 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 2681 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
-//@line 2612 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/modules/libpref/src/init/all.js"
+//@line 2689 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
 
 // Login Manager prefs
 pref("signon.rememberSignons",              true);
 pref("signon.expireMasterPassword",         false);
 pref("signon.SignonFileName",               "signons.txt"); // obsolete 
 pref("signon.SignonFileName2",              "signons2.txt"); // obsolete
-pref("signon.SignonFileName3",              "signons3.txt");
+pref("signon.SignonFileName3",              "signons3.txt"); // obsolete
 pref("signon.autofillForms",                true); 
 pref("signon.debug",                        false); // logs to Error Console
 
@@ -1555,3 +1621,15 @@ pref("browser.zoom.full", false);
 pref("zoom.minPercent", 30);
 pref("zoom.maxPercent", 300);
 pref("toolkit.zoomManager.zoomValues", ".3,.5,.67,.8,.9,1,1.1,1.2,1.33,1.5,1.7,2,2.4,3");
+
+// Image cache prefs
+// The maximum size, in bytes, of the decoded images we cache
+pref("image.cache.size", 5242880);
+// A weight, from 0-1000, to place on time when comparing to size.
+// Size is given a weight of 1000 - timeweight.
+pref("image.cache.timeweight", 500);
+
+//@line 2718 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/modules/libpref/src/init/all.js"
+
+// Enable/Disable the geolocation API for content
+pref("geo.enabled", true);

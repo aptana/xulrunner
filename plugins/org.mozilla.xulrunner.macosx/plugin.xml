@@ -5,6 +5,6 @@
          id="org.mozilla.xulrunner.carbon.macosx"
          name="Mozilla Xulrunner for MacOSX"
          point="org.eclipse.atf.mozilla.ide.core.xulrunner">
-      <xulrunner path="/xulrunner" version="1.9.0.5"/>
+      <xulrunner path="/xulrunner" version="1.9.1.0"/>
    </extension>
 </plugin>

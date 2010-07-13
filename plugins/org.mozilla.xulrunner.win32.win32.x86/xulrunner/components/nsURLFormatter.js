@@ -1,4 +1,4 @@
-//@line 37 "e:\xr19rel\WINNT_5.2_Depend\mozilla\toolkit\components\urlformatter\src\nsURLFormatter.js"
+//@line 37 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\components\urlformatter\src\nsURLFormatter.js"
 /**
  * @class nsURLFormatterService
  *
@@ -70,7 +70,7 @@ nsURLFormatterService.prototype = {
     }
 
     if (!PS.prefHasUserValue(aPref) &&
-        /^(?:data:.+,.+=.+|chrome:\/\/.+\/locale\/.+\.properties)$/.test(format)) {
+        /^(data:text\/plain,.+=.+|chrome:\/\/.+\/locale\/.+\.properties)$/.test(format)) {
       // This looks as if it might be a localised preference
       try {
         format = PS.getComplexValue(aPref, Ci.nsIPrefLocalizedString).data;

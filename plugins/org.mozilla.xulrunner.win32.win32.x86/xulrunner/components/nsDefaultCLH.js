@@ -1,4 +1,4 @@
-//@line 38 "e:\xr19rel\WINNT_5.2_Depend\mozilla\toolkit\components\nsDefaultCLH.js"
+//@line 38 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\components\nsDefaultCLH.js"
 
 const nsISupports              = Components.interfaces.nsISupports;
 
@@ -77,6 +77,10 @@ var nsDefaultCLH = {
 
       dump(out + "\n");
       Components.utils.reportError(out);
+    }
+    
+    if (cmdLine.handleFlag("silent", false)) {
+      cmdLine.preventDefault = true;
     }
 
     if (cmdLine.preventDefault)

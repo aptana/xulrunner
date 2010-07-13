@@ -1,4 +1,4 @@
-//@line 41 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/toolkit/components/console/jsconsole-clhandler.js"
+//@line 41 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/components/console/jsconsole-clhandler.js"
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");

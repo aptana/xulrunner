@@ -1,4 +1,4 @@
-//@line 44 "/builds/tinderbox/Xr-Mozilla1.9-Release/Darwin_8.8.4_Depend/mozilla/toolkit/content/debug.js"
+//@line 44 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/content/debug.js"
 
 var EXPORTED_SYMBOLS = ["NS_ASSERT"];
 

@@ -1,12 +1,14 @@
 Manifest-Version: 1.0
-Bundle-ManifestVersion: 2
-Bundle-Name: Mozilla XPCOM For Java
-Bundle-SymbolicName: org.mozilla.xpcom
-Bundle-Version: 1.9.0.5
+Export-Package: org.mozilla.interfaces,org.mozilla.xpcom
+Bundle-Vendor: %providerName
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: MozillaGlue.jar,MozillaInterfaces.jar
+Bundle-Version: 1.9.1.0
+Eclipse-BuddyPolicy: registered
 Bundle-Localization: plugin
-Bundle-ClassPath: MozillaInterfaces.jar,
- MozillaGlue.jar
-Export-Package: org.mozilla.interfaces,
- org.mozilla.xpcom;uses:="org.mozilla.interfaces"
-Bundle-Vendor: mozilla.org
-Bundle-RequiredExecutionEnvironment: J2SE-1.4
+Bundle-Name: %pluginName
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: org.mozilla.xpcom
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+
+

@@ -2,7 +2,7 @@
 <feature
       id="org.mozilla.xpcom.feature"
       label="Mozilla XPCOM for Java"
-      version="1.9.0.5"
+      version="1.9.1.0"
       provider-name="Mozilla.org">
 
    <description url="http://developer.mozilla.org/en/docs/XULRunner">
@@ -486,7 +486,7 @@ EXHIBIT A -Mozilla Public License.
    </license>
 
    <url>
-      <update label="Mozilla Xulrunner and XPCOM update site" url="http://download.aptana.org/tools/studio/plugin/update/xul-eclipse/"/>
+      <update label="Mozilla Xulrunner and XPCOM update site" url="http://download.zend.com/atf"/>
       <discovery label="Mozilla Xulrunner and XPCOM discovery site" url="http://ftp.mozilla.org/pub/mozilla.org/xulrunner/eclipse/"/>
    </url>
 
@@ -494,6 +494,6 @@ EXHIBIT A -Mozilla Public License.
          id="org.mozilla.xpcom"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="1.9.1.0_v20090824-1300"/>
 
 </feature>

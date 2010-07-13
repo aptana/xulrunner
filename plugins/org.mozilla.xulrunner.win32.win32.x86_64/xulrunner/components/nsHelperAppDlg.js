@@ -1,5 +1,5 @@
 /*
-//@line 42 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
+//@line 45 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
 */
 
 /* This file implements the nsIHelperAppLauncherDialog interface.
@@ -13,6 +13,10 @@
  * nsUnknownContentTypeDialog component.
  */
 
+const PREF_BD_USEDOWNLOADDIR = "browser.download.useDownloadDir";
+const nsITimer = Components.interfaces.nsITimer;
+
+Components.utils.import("resource://gre/modules/DownloadLastDir.jsm");
 
 /* ctor
  */
@@ -30,9 +34,9 @@ function nsUnknownContentTypeDialog() {
 nsUnknownContentTypeDialog.prototype = {
     nsIMIMEInfo  : Components.interfaces.nsIMIMEInfo,
 
-    // This "class" supports nsIHelperAppLauncherDialog, and nsISupports.
     QueryInterface: function (iid) {
         if (!iid.equals(Components.interfaces.nsIHelperAppLauncherDialog) &&
+            !iid.equals(Components.interfaces.nsITimerCallback) &&
             !iid.equals(Components.interfaces.nsISupports)) {
             throw Components.results.NS_ERROR_NO_INTERFACE;
         }
@@ -47,26 +51,45 @@ nsUnknownContentTypeDialog.prototype = {
     show: function(aLauncher, aContext, aReason)  {
       this.mLauncher = aLauncher;
       this.mContext  = aContext;
-      // Display the dialog using the Window Watcher interface.
-      
-      var ir = aContext.QueryInterface(Components.interfaces.nsIInterfaceRequestor);
-      var dwi = ir.getInterface(Components.interfaces.nsIDOMWindowInternal);
-      var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
-                .getService(Components.interfaces.nsIWindowWatcher);
-      this.mDialog = ww.openWindow(dwi,
-                                   "chrome://mozapps/content/downloads/unknownContentType.xul",
-                                   null,
-                                   "chrome,centerscreen,titlebar,dialog=yes,dependent",
-                                   null);
-      // Hook this object to the dialog.
-      this.mDialog.dialog = this;
-      
-      // Hook up utility functions. 
-      this.getSpecialFolderKey = this.mDialog.getSpecialFolderKey;
-      
-      // Watch for error notifications.
-      this.progressListener.helperAppDlg = this;
-      this.mLauncher.setWebProgressListener(this.progressListener);
+
+      const nsITimer = Components.interfaces.nsITimer;
+      this._showTimer = Components.classes["@mozilla.org/timer;1"]
+                                  .createInstance(nsITimer);
+      this._showTimer.initWithCallback(this, 0, nsITimer.TYPE_ONE_SHOT);
+    },
+
+    // When opening from new tab, if tab closes while dialog is opening,
+    // (which is a race condition on the XUL file being cached and the timer
+    // in nsExternalHelperAppService), the dialog gets a blur and doesn't
+    // activate the OK button.  So we wait a bit before doing opening it.
+    reallyShow: function() {
+        try {
+          var ir = this.mContext.QueryInterface(Components.interfaces.nsIInterfaceRequestor);
+          var dwi = ir.getInterface(Components.interfaces.nsIDOMWindowInternal);
+          var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
+                             .getService(Components.interfaces.nsIWindowWatcher);
+          this.mDialog = ww.openWindow(dwi,
+                                       "chrome://mozapps/content/downloads/unknownContentType.xul",
+                                       null,
+                                       "chrome,centerscreen,titlebar,dialog=yes,dependent",
+                                       null);
+        } catch (ex) {
+          // The containing window may have gone away.  Break reference
+          // cycles and stop doing the download.
+          const NS_BINDING_ABORTED = 0x804b0002;
+          this.mLauncher.cancel(NS_BINDING_ABORTED);
+          return;
+        }
+
+        // Hook this object to the dialog.
+        this.mDialog.dialog = this;
+
+        // Hook up utility functions.
+        this.getSpecialFolderKey = this.mDialog.getSpecialFolderKey;
+
+        // Watch for error notifications.
+        this.progressListener.helperAppDlg = this;
+        this.mLauncher.setWebProgressListener(this.progressListener);
     },
 
     // promptForSaveToFile:  Display file picker dialog and return selected file.
@@ -80,128 +103,150 @@ nsUnknownContentTypeDialog.prototype = {
     //
     // Note - this function is called without a dialog, so it cannot access any part
     // of the dialog XUL as other functions on this object do. 
-    promptForSaveToFile: function(aLauncher, aContext, aDefaultFile, aSuggestedFileExtension) {
-      var result = "";
+    promptForSaveToFile: function(aLauncher, aContext, aDefaultFile, aSuggestedFileExtension, aForcePrompt) {
+      var result = null;
       
       this.mLauncher = aLauncher;
 
-      // If the user is always downloading to the same location, the default download
-      // folder is stored in preferences. If a value is found stored, use that 
-      // automatically and don't ask via a dialog. 
-      var prefs = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefBranch);
-      var autodownload = prefs.getBoolPref("browser.download.useDownloadDir");
-      if (autodownload) {
-        function getSpecialFolderKey(aFolderType) 
-        {
-          if (aFolderType == "Desktop")
-            return "Desk";
-        
-          if (aFolderType != "Downloads")
-            throw "ASSERTION FAILED: folder type should be 'Desktop' or 'Downloads'";
-        
-//@line 142 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
-          return "Pers";
-//@line 150 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
-        }
-        
-        function getDownloadsFolder(aFolder)
-        {
-          var fileLocator = Components.classes["@mozilla.org/file/directory_service;1"].getService(Components.interfaces.nsIProperties);
+      let prefs = Components.classes["@mozilla.org/preferences-service;1"]
+                            .getService(Components.interfaces.nsIPrefBranch);
 
-          var dir = fileLocator.get(getSpecialFolderKey(aFolder), Components.interfaces.nsILocalFile);
-          
-          var bundle = Components.classes["@mozilla.org/intl/stringbundle;1"].getService(Components.interfaces.nsIStringBundleService);
-          bundle = bundle.createBundle("chrome://mozapps/locale/downloads/unknownContentType.properties");
+      if (!aForcePrompt) {
+        // Check to see if the user wishes to auto save to the default download
+        // folder without prompting. Note that preference might not be set.
+        let autodownload = false;
+        try {
+          autodownload = prefs.getBoolPref(PREF_BD_USEDOWNLOADDIR);
+        } catch (e) { }
+      
+        if (autodownload) {
+          // Retrieve the user's default download directory
+          let dnldMgr = Components.classes["@mozilla.org/download-manager;1"]
+                                  .getService(Components.interfaces.nsIDownloadManager);
+          let defaultFolder = dnldMgr.userDownloadsDirectory;
+          result = this.validateLeafName(defaultFolder, aDefaultFile, aSuggestedFileExtension);
 
-          var description = bundle.GetStringFromName("myDownloads");
-          if (aFolder != "Desktop")
-            dir.append(description);
-            
-          return dir;
+          // Check to make sure we have a valid directory, otherwise, prompt
+          if (result)
+            return result;
         }
-
-        var defaultFolder = null;
-        switch (prefs.getIntPref("browser.download.folderList")) {
-        case 0:
-          defaultFolder = getDownloadsFolder("Desktop");
-          break;
-        case 1:
-          defaultFolder = getDownloadsFolder("Downloads");
-          break;
-        case 2:
-          defaultFolder = prefs.getComplexValue("browser.download.dir", Components.interfaces.nsILocalFile);
-          break;
-        }
-        
-        result = this.validateLeafName(defaultFolder, aDefaultFile, aSuggestedFileExtension);
       }
       
-      if (!result) {
-        // Use file picker to show dialog.
-        var nsIFilePicker = Components.interfaces.nsIFilePicker;
-        var picker = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
+      // Use file picker to show dialog.
+      var nsIFilePicker = Components.interfaces.nsIFilePicker;
+      var picker = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
 
-        var bundle = Components.classes["@mozilla.org/intl/stringbundle;1"].getService(Components.interfaces.nsIStringBundleService);
-        bundle = bundle.createBundle("chrome://mozapps/locale/downloads/unknownContentType.properties");
+      var bundle = Components.classes["@mozilla.org/intl/stringbundle;1"].getService(Components.interfaces.nsIStringBundleService);
+      bundle = bundle.createBundle("chrome://mozapps/locale/downloads/unknownContentType.properties");
 
-        var windowTitle = bundle.GetStringFromName("saveDialogTitle");
-        var parent = aContext.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(Components.interfaces.nsIDOMWindowInternal);
-        picker.init(parent, windowTitle, nsIFilePicker.modeSave);
-        picker.defaultString = aDefaultFile;
+      var windowTitle = bundle.GetStringFromName("saveDialogTitle");
+      var parent = aContext.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(Components.interfaces.nsIDOMWindowInternal);
+      picker.init(parent, windowTitle, nsIFilePicker.modeSave);
+      picker.defaultString = aDefaultFile;
 
-        if (aSuggestedFileExtension) {
-          // aSuggestedFileExtension includes the period, so strip it
-          picker.defaultExtension = aSuggestedFileExtension.substring(1);
-        } 
-        else {
-          try {
-            picker.defaultExtension = this.mLauncher.MIMEInfo.primaryExtension;
-          } 
-          catch (ex) { }
-        }
-
-        var wildCardExtension = "*";
-        if (aSuggestedFileExtension) {
-          wildCardExtension += aSuggestedFileExtension;
-          picker.appendFilter(this.mLauncher.MIMEInfo.description, wildCardExtension);
-        }
-
-        picker.appendFilters( nsIFilePicker.filterAll );
-
-        // Pull in the user's preferences and get the default download directory.
-        var prefs = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefBranch);
+      if (aSuggestedFileExtension) {
+        // aSuggestedFileExtension includes the period, so strip it
+        picker.defaultExtension = aSuggestedFileExtension.substring(1);
+      } 
+      else {
         try {
-          var startDir = prefs.getComplexValue("browser.download.dir", Components.interfaces.nsILocalFile);
-          if (startDir.exists()) {
-            picker.displayDirectory = startDir;
-          }
+          picker.defaultExtension = this.mLauncher.MIMEInfo.primaryExtension;
         } 
-        catch(exception) { }
+        catch (ex) { }
+      }
 
-        var dlgResult = picker.show();
+      var wildCardExtension = "*";
+      if (aSuggestedFileExtension) {
+        wildCardExtension += aSuggestedFileExtension;
+        picker.appendFilter(this.mLauncher.MIMEInfo.description, wildCardExtension);
+      }
 
-        if (dlgResult == nsIFilePicker.returnCancel) {
-          // null result means user cancelled.
-          return null;
+      picker.appendFilters( nsIFilePicker.filterAll );
+
+      var inPrivateBrowsing = false;
+      try {
+        var pbs = Components.classes["@mozilla.org/privatebrowsing;1"]
+                            .getService(Components.interfaces.nsIPrivateBrowsingService);
+        inPrivateBrowsing = pbs.privateBrowsingEnabled;
+      }
+      catch (e) {
+      }
+
+      // Default to lastDir if it's valid, use the user's default
+      // downloads directory otherwise.
+      var dnldMgr = Components.classes["@mozilla.org/download-manager;1"]
+                              .getService(Components.interfaces.nsIDownloadManager);
+      try {
+        var lastDir;
+        if (inPrivateBrowsing && gDownloadLastDir.file)
+          lastDir = gDownloadLastDir.file;
+        else
+          lastDir = prefs.getComplexValue("browser.download.lastDir",
+                          Components.interfaces.nsILocalFile);
+        if (lastDir.exists())
+          picker.displayDirectory = lastDir;
+        else
+          picker.displayDirectory = dnldMgr.userDownloadsDirectory;
+      } catch (ex) {
+        picker.displayDirectory = dnldMgr.userDownloadsDirectory;
+      }
+
+      if (picker.show() == nsIFilePicker.returnCancel) {
+        // null result means user cancelled.
+        return null;
+      }
+
+      // Be sure to save the directory the user chose through the Save As... 
+      // dialog  as the new browser.download.dir since the old one
+      // didn't exist.
+      result = picker.file;
+
+      if (result) {
+        try {
+          // Remove the file so that it's not there when we ensure non-existence later;
+          // this is safe because for the file to exist, the user would have had to
+          // confirm that he wanted the file overwritten.
+          if (result.exists())
+            result.remove(false);
         }
+        catch (e) { }
+        var newDir = result.parent.QueryInterface(Components.interfaces.nsILocalFile);
 
+        // Do not store the last save directory as a pref inside the private browsing mode
+        if (inPrivateBrowsing)
+          gDownloadLastDir.file = newDir;
+        else
+          prefs.setComplexValue("browser.download.lastDir", Components.interfaces.nsILocalFile, newDir);
 
-        // Be sure to save the directory the user chose through the Save As... 
-        // dialog  as the new browser.download.dir
-        result = picker.file;
-
-        if (result) {
-          var newDir = result.parent;
-          prefs.setComplexValue("browser.download.dir", Components.interfaces.nsILocalFile, newDir);
-        }
+        result = this.validateLeafName(newDir, result.leafName, null);
       }
       return result;
     },
-    
+
+    /**
+     * Ensures that a local folder/file combination does not already exist in
+     * the file system (or finds such a combination with a reasonably similar
+     * leaf name), creates the corresponding file, and returns it.
+     *
+     * @param   aLocalFile
+     *          the folder where the file resides
+     * @param   aLeafName
+     *          the string name of the file (may be empty if no name is known,
+     *          in which case a name will be chosen)
+     * @param   aFileExt
+     *          the extension of the file, if one is known; this will be ignored
+     *          if aLeafName is non-empty
+     * @returns nsILocalFile
+     *          the created file
+     */
     validateLeafName: function (aLocalFile, aLeafName, aFileExt)
     {
       if (!aLocalFile || !aLocalFile.exists())
         return null;
+
+      // Remove any leading periods, since we don't want to save hidden files
+      // automatically.
+      aLeafName = aLeafName.replace(/^\.+/, "");
 
       if (aLeafName == "")
         aLeafName = "unnamed" + (aFileExt ? "." + aFileExt : "");
@@ -209,22 +254,37 @@ nsUnknownContentTypeDialog.prototype = {
 
       this.makeFileUnique(aLocalFile);
 
-      if (aLocalFile.isExecutable() && !this.mLauncher.targetFile.isExecutable()) {
-        var f = aLocalFile.clone();
-        aLocalFile.leafName = aLocalFile.leafName + "." + this.mLauncher.MIMEInfo.primaryExtension; 
+//@line 300 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+      let ext;
+      try {
+        // We can fail here if there's no primary extension set
+        ext = "." + this.mLauncher.MIMEInfo.primaryExtension;
+      } catch (e) { }
+
+      // Append a file extension if it's an executable that doesn't have one
+      // but make sure we actually have an extension to add
+      let leaf = aLocalFile.leafName;
+      if (aLocalFile.isExecutable() && ext &&
+          leaf.substring(leaf.length - ext.length) != ext) {
+        let f = aLocalFile.clone();
+        aLocalFile.leafName = leaf + ext;
 
         f.remove(false);
         this.makeFileUnique(aLocalFile);
       }
+//@line 318 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+
       return aLocalFile;
     },
 
+    /**
+     * Generates and returns a uniquely-named file from aLocalFile.  If
+     * aLocalFile does not exist, it will be the file returned; otherwise, a
+     * file whose name is similar to that of aLocalFile will be returned.
+     */
     makeFileUnique: function (aLocalFile)
     {
       try {
-        // Since we're automatically downloading, we don't get the file picker's 
-        // logic to check for existing files, so we need to do that here.
-        //
         // Note - this code is identical to that in 
         //   toolkit/content/contentAreaUtils.js.
         // If you are updating this code, update that code too! We can't share code
@@ -285,7 +345,7 @@ nsUnknownContentTypeDialog.prototype = {
             }
         },
 
-        // Ignore onProgressChange, onStateChange, onLocationChange, and onSecurityChange notifications.
+        // Ignore onProgressChange, onProgressChange64, onStateChange, onLocationChange, onSecurityChange, and onRefreshAttempted notifications.
         onProgressChange: function( aWebProgress,
                                     aRequest,
                                     aCurSelfProgress,
@@ -311,7 +371,11 @@ nsUnknownContentTypeDialog.prototype = {
         },
 
         onSecurityChange: function( aWebProgress, aRequest, state ) {
-        }
+        },
+
+        onRefreshAttempted: function( aWebProgress, aURI, aDelay, aSameURI ) {
+          return true;
+	}
     },
 
     // initDialog:  Fill various dialog fields with initial content.
@@ -348,52 +412,88 @@ nsUnknownContentTypeDialog.prototype = {
       var iconString = "moz-icon://" + fname + "?size=16&contentType=" + this.mLauncher.MIMEInfo.MIMEType;
       this.dialogElement("contentTypeImage").setAttribute("src", iconString);
 
-      this.initAppAndSaveToDiskValues();
-
-      // Initialize "always ask me" box. This should always be disabled
-      // and set to true for the ambiguous type application/octet-stream.
-      // We don't also check for application/x-msdownload here since we
-      // want users to be able to autodownload .exe files. 
-      var rememberChoice = this.dialogElement("rememberChoice");
-
-//@line 424 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
+      // if always-save and is-executable and no-handler
+      // then set up simple ui
       var mimeType = this.mLauncher.MIMEInfo.MIMEType;
-      if (mimeType == "application/octet-stream" || 
-          mimeType == "application/x-msdownload" ||
-          this.mLauncher.targetFile.isExecutable()) {
-        rememberChoice.checked = false;
-        rememberChoice.disabled = true;
+      var shouldntRememberChoice = (mimeType == "application/octet-stream" || 
+                                    mimeType == "application/x-msdownload" ||
+                                    this.mLauncher.targetFileIsExecutable);
+      if (shouldntRememberChoice && !this.openWithDefaultOK()) {
+        // hide featured choice 
+        this.dialogElement("normalBox").collapsed = true;
+        // show basic choice 
+        this.dialogElement("basicBox").collapsed = false;
+        // change button labels and icons; use "save" icon for the accept
+        // button since it's the only action possible
+        let acceptButton = this.mDialog.document.documentElement
+                               .getButton("accept");
+        acceptButton.label = this.dialogElement("strings")
+                                 .getString("unknownAccept.label");
+        acceptButton.setAttribute("icon", "save");
+        this.mDialog.document.documentElement.getButton("cancel").label = this.dialogElement("strings").getString("unknownCancel.label");
+        // hide other handler
+        this.dialogElement("openHandler").collapsed = true;
+        // set save as the selected option
+        this.dialogElement("mode").selectedItem = this.dialogElement("save");
       }
       else {
-        rememberChoice.checked = !this.mLauncher.MIMEInfo.alwaysAskBeforeHandling;
-      }
-      this.toggleRememberChoice(rememberChoice);
+        this.initAppAndSaveToDiskValues();
 
-      // XXXben - menulist won't init properly, hack. 
-      var openHandler = this.dialogElement("openHandler");
-      openHandler.parentNode.removeChild(openHandler);
-      var openHandlerBox = this.dialogElement("openHandlerBox");
-      openHandlerBox.appendChild(openHandler);
+        // Initialize "always ask me" box. This should always be disabled
+        // and set to true for the ambiguous type application/octet-stream.
+        // We don't also check for application/x-msdownload here since we
+        // want users to be able to autodownload .exe files. 
+        var rememberChoice = this.dialogElement("rememberChoice");
+
+//@line 509 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+        if (shouldntRememberChoice) {
+          rememberChoice.checked = false;
+          rememberChoice.disabled = true;
+        }
+        else {
+          rememberChoice.checked = !this.mLauncher.MIMEInfo.alwaysAskBeforeHandling;
+        }
+        this.toggleRememberChoice(rememberChoice);
+
+        // XXXben - menulist won't init properly, hack. 
+        var openHandler = this.dialogElement("openHandler");
+        openHandler.parentNode.removeChild(openHandler);
+        var openHandlerBox = this.dialogElement("openHandlerBox");
+        openHandlerBox.appendChild(openHandler);
+      }
 
       this.mDialog.setTimeout("dialog.postShowCallback()", 0);
       
       this.mDialog.document.documentElement.getButton("accept").disabled = true;
-      const nsITimer = Components.interfaces.nsITimer;
-      this._timer = Components.classes["@mozilla.org/timer;1"]
-                              .createInstance(nsITimer);
-      this._timer.initWithCallback(this, 250, nsITimer.TYPE_ONE_SHOT);
+      this._showTimer = Components.classes["@mozilla.org/timer;1"]
+                                  .createInstance(nsITimer);
+      this._showTimer.initWithCallback(this, 250, nsITimer.TYPE_ONE_SHOT);
     },
-    
-    _timer: null,
+
     notify: function (aTimer) {
-      try { // The user may have already canceled the dialog.
-        if (!this._blurred)
-          this.mDialog.document.documentElement.getButton('accept').disabled = false;
-      } catch (ex) {}
-      this._delayExpired = true;
-      this._timer = null; // the timer won't release us, so we have to release it
+      if (aTimer == this._showTimer) {
+        if (!this.mDialog) {
+          this.reallyShow();
+        } else {
+          // The user may have already canceled the dialog.
+          try {
+            if (!this._blurred) {
+              this.mDialog.document.documentElement.getButton("accept").disabled = false;
+            }
+          } catch (ex) {}
+          this._delayExpired = true;
+        }
+        // The timer won't release us, so we have to release it.
+        this._showTimer = null;
+      }
+      else if (aTimer == this._saveToDiskTimer) {
+        // Since saveToDisk may open a file picker and therefore block this routine,
+        // we should only call it once the dialog is closed.
+        this.mLauncher.saveToDisk(null, false);
+        this._saveToDiskTimer = null;
+      }
     },
-    
+
     postShowCallback: function () {
       this.mDialog.sizeToContent();
 
@@ -458,7 +558,7 @@ nsUnknownContentTypeDialog.prototype = {
           catch (ex) {
           }
           if (primaryExtension != "")
-            typeString = primaryExtension.toUpperCase() + " file";
+            typeString = this.dialogElement("strings").getFormattedString("fileType", [primaryExtension.toUpperCase()]);
           // 3. If we can't even do that, just give up and show the MIME type. 
           else
             typeString = mimeInfo.MIMEType;
@@ -470,15 +570,11 @@ nsUnknownContentTypeDialog.prototype = {
     _blurred: false,
     _delayExpired: false, 
     onBlur: function(aEvent) {
-      if (aEvent.target != this.mDialog.document)
-        return;
       this._blurred = true;
       this.mDialog.document.documentElement.getButton("accept").disabled = true;
     },
     
     onFocus: function(aEvent) {
-      if (aEvent.target != this.mDialog.document)
-        return;
       this._blurred = false;
       if (this._delayExpired) {
         var script = "document.documentElement.getButton('accept').disabled = false";
@@ -488,10 +584,8 @@ nsUnknownContentTypeDialog.prototype = {
 
     // Returns true if opening the default application makes sense.
     openWithDefaultOK: function() {
-        var result;
-
         // The checking is different on Windows...
-//@line 559 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
+//@line 649 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
         // Windows presents some special cases.
         // We need to prevent use of "system default" when the file is
         // executable (so the user doesn't launch nasty programs downloaded
@@ -499,12 +593,9 @@ nsUnknownContentTypeDialog.prototype = {
         // executable (because we will prompt the user for the default app
         // in that case).
         
-        // Need to get temporary file and check for executable-ness.
-        var tmpFile = this.mLauncher.targetFile;
-        
         //  Default is Ok if the file isn't executable (and vice-versa).
-        return !tmpFile.isExecutable();
-//@line 577 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
+        return !this.mLauncher.targetFileIsExecutable;
+//@line 664 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
     },
     
     // Set "default" application description field.
@@ -525,9 +616,9 @@ nsUnknownContentTypeDialog.prototype = {
 
     // getPath:
     getPath: function (aFile) {
-//@line 600 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
+//@line 687 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
       return aFile.path;
-//@line 602 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
+//@line 689 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
     },
 
     // initAppAndSaveToDiskValues:
@@ -538,7 +629,7 @@ nsUnknownContentTypeDialog.prototype = {
       // from the browser at the moment because of security concerns. 
       var openWithDefaultOK = this.openWithDefaultOK();
       var mimeType = this.mLauncher.MIMEInfo.MIMEType;
-      if (this.mLauncher.targetFile.isExecutable() || (
+      if (this.mLauncher.targetFileIsExecutable || (
           (mimeType == "application/octet-stream" ||
            mimeType == "application/x-msdownload") && 
            !openWithDefaultOK)) {
@@ -551,16 +642,27 @@ nsUnknownContentTypeDialog.prototype = {
       }
     
       // Fill in helper app info, if there is any.
-      this.chosenApp = this.mLauncher.MIMEInfo.preferredApplicationHandler;
+      try {
+        this.chosenApp =
+          this.mLauncher.MIMEInfo.preferredApplicationHandler
+              .QueryInterface(Components.interfaces.nsILocalHandlerApp);
+      } catch (e) {
+        this.chosenApp = null;
+      }
       // Initialize "default application" field.
       this.initDefaultApp();
 
       var otherHandler = this.dialogElement("otherHandler");
               
       // Fill application name textbox.
-      if (this.chosenApp && this.chosenApp.path) {
-        otherHandler.setAttribute("path", this.getPath(this.chosenApp));
-        otherHandler.label = this.chosenApp.leafName;
+      if (this.chosenApp && this.chosenApp.executable && 
+          this.chosenApp.executable.path) {
+        otherHandler.setAttribute("path",
+                                  this.getPath(this.chosenApp.executable));
+
+//@line 734 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+        otherHandler.label = this.chosenApp.executable.leafName;
+//@line 736 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
         otherHandler.hidden = false;
       }
 
@@ -594,10 +696,7 @@ nsUnknownContentTypeDialog.prototype = {
         }
       }
       
-      // otherHandler is always disabled on Mac
-//@line 673 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
       otherHandler.nextSibling.hidden = otherHandler.nextSibling.nextSibling.hidden = false;
-//@line 675 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
       this.updateOKButton();
     },
 
@@ -680,10 +779,9 @@ nsUnknownContentTypeDialog.prototype = {
         needUpdate = this.mLauncher.MIMEInfo.preferredAction != this.nsIMIMEInfo.useHelperApp || this.appChanged();
         if (needUpdate) {
           this.mLauncher.MIMEInfo.preferredAction = this.nsIMIMEInfo.useHelperApp;
-          // App may have changed - Update application and description
+          // App may have changed - Update application
           var app = this.helperAppChoice();
           this.mLauncher.MIMEInfo.preferredApplicationHandler = app;
-          this.mLauncher.MIMEInfo.applicationDescription = "";
         }
       }
       // We will also need to update if the "always ask" flag has changed.
@@ -708,6 +806,7 @@ nsUnknownContentTypeDialog.prototype = {
     updateHelperAppPref: function() {
       var ha = new this.mDialog.HelperApps();
       ha.updateTypeInfo(this.mLauncher.MIMEInfo);
+      ha.destroy();
     },
     
     // onOK:
@@ -715,7 +814,8 @@ nsUnknownContentTypeDialog.prototype = {
       // Verify typed app path, if necessary.
       if (this.useOtherHandler) {
         var helperApp = this.helperAppChoice();
-        if (!helperApp || !helperApp.exists()) {
+        if (!helperApp || !helperApp.executable ||
+            !helperApp.executable.exists()) {
           // Show alert and try again.        
           var bundle = this.dialogElement("strings");                    
           var msg = bundle.getFormattedString("badApp", [this.dialogElement("otherHandler").path]);
@@ -737,7 +837,7 @@ nsUnknownContentTypeDialog.prototype = {
       // Remove our web progress listener (a progress dialog will be
       // taking over).
       this.mLauncher.setWebProgressListener(null);
-      
+
       // saveToDisk and launchWithApplication can return errors in 
       // certain circumstances (e.g. The user clicks cancel in the
       // "Save to Disk" dialog. In those cases, we don't want to
@@ -750,8 +850,14 @@ nsUnknownContentTypeDialog.prototype = {
           // for the file to be saved to to pass to |saveToDisk| - otherwise
           // we must ask the user to pick a save name.
 
-//@line 841 "/cygdrive/d/WORKS/mozilla/firefox/mozilla/toolkit/mozapps/downloads/src/nsHelperAppDlg.js.in"
-          this.mLauncher.saveToDisk(null, false);
+//@line 937 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+
+          // see @notify
+          // we cannot use opener's setTimeout, see bug 420405
+          this._saveToDiskTimer = Components.classes["@mozilla.org/timer;1"]
+                                            .createInstance(nsITimer);
+          this._saveToDiskTimer.initWithCallback(this, 0,
+                                                 nsITimer.TYPE_ONE_SHOT);
         }
         else
           this.mLauncher.launchWithApplication(null, false);
@@ -796,40 +902,88 @@ nsUnknownContentTypeDialog.prototype = {
       return this.mDialog.document.getElementById(id);
     },
 
+    // Retrieve the pretty description from the file
+    getFileDisplayName: function getFileDisplayName(file)
+    { 
+//@line 992 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+        if (file instanceof Components.interfaces.nsILocalFileWin) {
+          try {
+            return file.getVersionInfoField("FileDescription");
+          } catch (ex) {
+          }
+        }
+//@line 999 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+        return file.leafName;
+    },
+
     // chooseApp:  Open file picker and prompt user for application.
     chooseApp: function() {
-      var nsIFilePicker = Components.interfaces.nsIFilePicker;
-      var fp = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
-      fp.init(this.mDialog,
-              this.dialogElement("strings").getString("chooseAppFilePickerTitle"),
-              nsIFilePicker.modeOpen);
+//@line 1005 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+    // Protect against the lack of an extension    
+    var fileExtension = "";
+    try {
+        fileExtension = this.mLauncher.MIMEInfo.primaryExtension;
+    } catch(ex) {
+    }
 
-      fp.appendFilters(nsIFilePicker.filterApps);
+    // Try to use the pretty description of the type, if one is available.
+    var typeString = this.mLauncher.MIMEInfo.description;
 
-      if (fp.show() == nsIFilePicker.returnOK && fp.file) {
+    if (!typeString) {
+      // If there is none, use the extension to 
+      // identify the file, e.g. "ZIP file"
+      if (fileExtension) {
+        typeString =
+          this.dialogElement("strings").
+          getFormattedString("fileType", [fileExtension.toUpperCase()]);
+      } else {
+        // If we can't even do that, just give up and show the MIME type.
+        typeString = this.mLauncher.MIMEInfo.MIMEType;
+      }
+    }
+
+    var params = {};
+    params.title = 
+      this.dialogElement("strings").getString("chooseAppFilePickerTitle");
+    params.description = typeString;
+    params.filename    = this.mLauncher.suggestedFileName;
+    params.mimeInfo    = this.mLauncher.MIMEInfo;
+    params.handlerApp  = null;
+
+    this.mDialog.openDialog("chrome://global/content/appPicker.xul", null,
+                            "chrome,modal,centerscreen,titlebar,dialog=yes",
+                            params);
+
+    if (params.handlerApp &&
+        params.handlerApp.executable &&
+        params.handlerApp.executable.isFile()) {
         // Show the "handler" menulist since we have a (user-specified) 
         // application now.
         this.dialogElement("modeDeck").setAttribute("selectedIndex", "0");
-        
+
         // Remember the file they chose to run.
-        this.chosenApp = fp.file;
-        // Update dialog.
+        this.chosenApp = params.handlerApp;
+
+        // Update dialog
         var otherHandler = this.dialogElement("otherHandler");
         otherHandler.removeAttribute("hidden");
-        otherHandler.setAttribute("path", this.getPath(this.chosenApp));
-        otherHandler.label = this.chosenApp.leafName;
+        otherHandler.setAttribute("path",
+          this.getPath(this.chosenApp.executable));
+        otherHandler.label = 
+          this.getFileDisplayName(this.chosenApp.executable);
         this.dialogElement("openHandler").selectedIndex = 1;
-        this.dialogElement("openHandler").setAttribute("lastSelectedItemID", "otherHandler");
-        
+        this.dialogElement("openHandler").setAttribute("lastSelectedItemID",
+          "otherHandler");
         this.dialogElement("mode").selectedItem = this.dialogElement("open");
-      }
-      else {
+    } else {
         var openHandler = this.dialogElement("openHandler");
         var lastSelectedID = openHandler.getAttribute("lastSelectedItemID");
         if (!lastSelectedID)
-          lastSelectedID = "defaultHandler";
+            lastSelectedID = "defaultHandler";
         openHandler.selectedItem = this.dialogElement(lastSelectedID);
-      }
+    }
+
+//@line 1115 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
     },
 
     // Turn this on to get debugging messages.
