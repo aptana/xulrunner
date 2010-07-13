@@ -1,9 +1,10 @@
 Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
 Bundle-Vendor: %Bundle-Vendor
+Bundle-Name: %Bundle-Name
+Bundle-SymbolicName: org.mozilla.xulrunner.macosx;singleton:=true
 Eclipse-BundleShape: dir
 Bundle-Version: 1.9.1.0
-Eclipse-PlatformFilter: (& (osgi.os=macosx) (osgi.arch=x86))
+Eclipse-PlatformFilter: (osgi.os=macosx)
 Bundle-localization: plugin
-Bundle-Name: %Bundle-Name
-Bundle-ManifestVersion: 2
-Bundle-SymbolicName: org.mozilla.xulrunner.macosx;singleton:=true
+Bundle-ClassPath: .
