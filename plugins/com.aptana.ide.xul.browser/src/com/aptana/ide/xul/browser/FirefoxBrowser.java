@@ -2,10 +2,6 @@ package com.aptana.ide.xul.browser;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.text.MessageFormat;
 
@@ -68,6 +64,7 @@ import com.aptana.ide.editors.unified.ContributedOutline;
  * Contribute xul-based firefox browser
  * 
  * @author Kevin Sawicki (ksawicki@aptana.com)
+ * @author Michael Xia (mxia@aptana.com)
  */
 public class FirefoxBrowser extends ContributedBrowser
 {
@@ -92,56 +89,9 @@ public class FirefoxBrowser extends ContributedBrowser
 	 */
 	public static final String XULRUNNER_PATH = "/xulrunner"; //$NON-NLS-1$
 
-	private static boolean useNativeMozilla = false;
-	private static int nativeMozillaField = SWT.NONE;
-	private static Class MozillaBrowser = null;
-
 	static
 	{
-		// In Eclipse 3.4 (3.3 as well?) or higher, we may be able to just set
-		// useNativeMozilla to true as it should always be there.
-		// For now, we're not making this change in the interest of keeping
-		// things working.
-		if (true || CoreUIUtils.inEclipse34orHigher == true)
-		{
-			try
-			{
-				Field mozillaField = SWT.class.getField("MOZILLA"); //$NON-NLS-1$
-				if (mozillaField.getType().equals(Integer.TYPE))
-				{
-					nativeMozillaField = mozillaField.getInt(SWT.class);
-					useNativeMozilla = true;
-				}
-			}
-			catch (Exception e)
-			{
-				useNativeMozilla = false;
-			}
-		}
-
-		if (!useNativeMozilla)
-		{
-			Bundle bundle = Platform.getBundle("org.eclipse.swt"); //$NON-NLS-1$
-			try
-			{
-				MozillaBrowser = bundle.loadClass("org.eclipse.swt.browser.MozillaBrowser"); //$NON-NLS-1$
-				if (MozillaBrowser != null)
-				{
-					useNativeMozilla = false;
-				}
-			}
-			catch (ClassNotFoundException e1)
-			{
-				IdeLog.logError(Activator.getDefault(), Messages.getString("FirefoxBrowser.Browser_Not_Found"), e1); //$NON-NLS-1$
-				// falls back to use the SWT browser
-				useNativeMozilla = true;
-			}
-		}
-		
-		if (useNativeMozilla) {
-			FirefoxExtensionsSupport.init();
-		}
-
+		FirefoxExtensionsSupport.init();
 	}
 
 	private Composite errors;
@@ -209,6 +159,7 @@ public class FirefoxBrowser extends ContributedBrowser
 	};
 		
 	private OpenWindowListener openWindowListener = new OpenWindowListener() {
+
 		public void open(WindowEvent event) {
 			if (!event.required || event.browser != null) {
 				return;
@@ -220,7 +171,7 @@ public class FirefoxBrowser extends ContributedBrowser
 		}
 	};
 
-	private Composite browser;
+	private Browser browser;
 
 	private nsIDOMDocument document;
 
@@ -228,7 +179,7 @@ public class FirefoxBrowser extends ContributedBrowser
 
 	private SelectionBox selectionBox = null;
 
-	private Composite createSWTBrowser(Composite parent)
+	private Browser createSWTBrowser(Composite parent)
 	{
 		try
 		{
@@ -282,9 +233,9 @@ public class FirefoxBrowser extends ContributedBrowser
 		nsIPrefBranch prefBranch = prefService.getBranch("");
 		prefBranch.setBoolPref("security.enable_java", 0);
 
-		browser = new Browser(parent, nativeMozillaField);
-		((Browser) browser).addProgressListener(progressListener);
-		((Browser) browser).addOpenWindowListener(openWindowListener);
+		browser = new Browser(parent, SWT.MOZILLA);
+		browser.addProgressListener(progressListener);
+		browser.addOpenWindowListener(openWindowListener);
 		if (Platform.OS_MACOSX.equals(Platform.getOS())) {
 			nsIWebBrowserSetup webBrowserSetup = (nsIWebBrowserSetup) internalGetWebBrowser().queryInterface(nsIWebBrowserSetup.NS_IWEBBROWSERSETUP_IID);
 			if (webBrowserSetup != null) {
@@ -294,60 +245,12 @@ public class FirefoxBrowser extends ContributedBrowser
 		return browser;
 	}
 
-	private Composite createMozillaBrowser(Composite parent)
-	{
-		try
-		{
-			if (MozillaBrowser != null)
-			{
-				Constructor mozillaBrowserConstructor = MozillaBrowser.getConstructor(new Class[] { Composite.class,
-						Integer.TYPE });
-				Object mozillaBrowser = mozillaBrowserConstructor.newInstance(new Object[] { parent,
-						Integer.valueOf(SWT.NONE) });
-				Method addProgressListener = MozillaBrowser.getMethod("addProgressListener", //$NON-NLS-1$
-						new Class[] { ProgressListener.class });
-				addProgressListener.invoke(mozillaBrowser, new Object[] { progressListener });
-				if (mozillaBrowser instanceof Composite)
-				{
-					browser = (Composite) mozillaBrowser;
-				}
-			}
-		}
-		catch (SecurityException e)
-		{
-		}
-		catch (NoSuchMethodException e)
-		{
-		}
-		catch (IllegalArgumentException e)
-		{
-		}
-		catch (InstantiationException e)
-		{
-		}
-		catch (IllegalAccessException e)
-		{
-		}
-		catch (InvocationTargetException e)
-		{
-		}
-		return browser;
-	}
-
 	/**
 	 * @see com.aptana.ide.editors.unified.ContributedBrowser#createControl(org.eclipse.swt.widgets.Composite)
 	 */
 	public void createControl(Composite parent)
 	{
-
-		if (useNativeMozilla)
-		{
-			browser = createSWTBrowser(parent);
-		}
-		else
-		{
-			browser = createMozillaBrowser(parent);
-		}
+		browser = createSWTBrowser(parent);
 		browser.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true));
 		errors = new Composite(parent, SWT.NONE);
 		GridLayout eLayout = new GridLayout(2, false);
@@ -384,33 +287,9 @@ public class FirefoxBrowser extends ContributedBrowser
 
 	private void internalRefresh()
 	{
-		if (browser instanceof Browser)
+		if (browser != null)
 		{
-			((Browser) browser).refresh();
-		}
-		else
-		{
-			Method refresh;
-			try
-			{
-				refresh = browser.getClass().getMethod("refresh", new Class[0]); //$NON-NLS-1$
-				refresh.invoke(browser, new Object[0]);
-			}
-			catch (SecurityException e)
-			{
-			}
-			catch (NoSuchMethodException e)
-			{
-			}
-			catch (IllegalArgumentException e)
-			{
-			}
-			catch (IllegalAccessException e)
-			{
-			}
-			catch (InvocationTargetException e)
-			{
-			}
+			browser.refresh();
 		}
 	}
 
@@ -495,69 +374,17 @@ public class FirefoxBrowser extends ContributedBrowser
 
 	private void internalSetUrl(String url)
 	{
-		if (browser instanceof Browser)
+		if (browser != null)
 		{
-			((Browser) browser).setUrl(url);
-		}
-		else
-		{
-			Method setUrl;
-			try
-			{
-				setUrl = browser.getClass().getMethod("setUrl", new Class[] { String.class }); //$NON-NLS-1$
-				setUrl.invoke(browser, new Object[] { url });
-			}
-			catch (SecurityException e)
-			{
-			}
-			catch (NoSuchMethodException e)
-			{
-			}
-			catch (IllegalArgumentException e)
-			{
-			}
-			catch (IllegalAccessException e)
-			{
-			}
-			catch (InvocationTargetException e)
-			{
-			}
+			browser.setUrl(url);
 		}
 	}
 
 	private String internalGetUrl()
 	{
-		if (browser instanceof Browser)
+		if (browser != null)
 		{
-			return ((Browser) browser).getUrl();
-		}
-		else
-		{
-			Method getUrl;
-			try
-			{
-				getUrl = browser.getClass().getMethod("getUrl", new Class[0]); //$NON-NLS-1$
-				Object retVal = getUrl.invoke(browser, new Object[0]);
-				if (retVal instanceof String)
-				{
-					return (String) retVal;
-				}
-			}
-			catch (SecurityException e)
-			{
-			}
-			catch (NoSuchMethodException e)
-			{
-			}
-			catch (IllegalArgumentException e)
-			{
-			}
-			catch (IllegalAccessException e)
-			{
-			}
-			catch (InvocationTargetException e)
-			{
-			}
+			return browser.getUrl();
 		}
 		return null;
 	}
@@ -620,33 +447,9 @@ public class FirefoxBrowser extends ContributedBrowser
 	 */
 	public void back()
 	{
-		if (browser instanceof Browser)
+		if (browser != null)
 		{
-			((Browser) browser).back();
-		}
-		else
-		{
-			Method back;
-			try
-			{
-				back = browser.getClass().getMethod("back", new Class[0]); //$NON-NLS-1$
-				back.invoke(browser, new Object[0]);
-			}
-			catch (SecurityException e)
-			{
-			}
-			catch (NoSuchMethodException e)
-			{
-			}
-			catch (IllegalArgumentException e)
-			{
-			}
-			catch (IllegalAccessException e)
-			{
-			}
-			catch (InvocationTargetException e)
-			{
-			}
+			browser.back();
 		}
 	}
 
@@ -655,33 +458,9 @@ public class FirefoxBrowser extends ContributedBrowser
 	 */
 	public void forward()
 	{
-		if (browser instanceof Browser)
+		if (browser != null)
 		{
-			((Browser) browser).forward();
-		}
-		else
-		{
-			Method forward;
-			try
-			{
-				forward = browser.getClass().getMethod("forward", new Class[0]); //$NON-NLS-1$
-				forward.invoke(browser, new Object[0]);
-			}
-			catch (SecurityException e)
-			{
-			}
-			catch (NoSuchMethodException e)
-			{
-			}
-			catch (IllegalArgumentException e)
-			{
-			}
-			catch (IllegalAccessException e)
-			{
-			}
-			catch (InvocationTargetException e)
-			{
-			}
+			browser.forward();
 		}
 	}
 
@@ -695,17 +474,10 @@ public class FirefoxBrowser extends ContributedBrowser
 
 	private nsIWebBrowser internalGetWebBrowser()
 	{
-		try
+		Object retVal = browser.getWebBrowser();
+		if (retVal instanceof nsIWebBrowser)
 		{
-			Method getWebBrowser = browser.getClass().getMethod("getWebBrowser", new Class[0]); //$NON-NLS-1$
-			Object retVal = getWebBrowser.invoke(browser, new Object[0]);
-			if (retVal instanceof nsIWebBrowser)
-			{
-				return (nsIWebBrowser) retVal;
-			}
-		}
-		catch (Exception e)
-		{
+			return (nsIWebBrowser) retVal;
 		}
 		return null;
 	}
@@ -805,29 +577,10 @@ public class FirefoxBrowser extends ContributedBrowser
      */
     public void addLocationListener(LocationListener listener)
     {
-        if (browser instanceof Browser)
-        {
-            ((Browser) browser).addLocationListener(listener);
-        }
-        else
-        {
-            try {
-                Method addLocationListener = MozillaBrowser.getMethod(
-                        "addLocationListener", //$NON-NLS-1$
-                        new Class[] { LocationListener.class });
-                addLocationListener.invoke(browser, new Object[] { listener });
-            } catch (SecurityException e) {
-                error(e);
-            } catch (NoSuchMethodException e) {
-                error(e);
-            } catch (IllegalArgumentException e) {
-                error(e);
-            } catch (IllegalAccessException e) {
-                error(e);
-            } catch (InvocationTargetException e) {
-                error(e);
-            }
-        }
+    	if (browser != null)
+    	{
+    		browser.addLocationListener(listener);
+    	}
     }
 
     /**
@@ -835,33 +588,9 @@ public class FirefoxBrowser extends ContributedBrowser
      */
     public void removeLocationListener(LocationListener listener)
     {
-        if (browser instanceof Browser)
+        if (browser != null)
         {
-            ((Browser) browser).removeLocationListener(listener);
+            browser.removeLocationListener(listener);
         }
-        else
-        {
-            try {
-                Method removeLocationListener = MozillaBrowser.getMethod(
-                        "removeLocationListener", //$NON-NLS-1$
-                        new Class[] { LocationListener.class });
-                removeLocationListener.invoke(browser, new Object[] { listener });
-            } catch (SecurityException e) {
-                error(e);
-            } catch (NoSuchMethodException e) {
-                error(e);
-            } catch (IllegalArgumentException e) {
-                error(e);
-            } catch (IllegalAccessException e) {
-                error(e);
-            } catch (InvocationTargetException e) {
-            	// ignores this exception since it could happen on exit
-            }
-        }
-    }
-
-    private void error(Exception e)
-    {
-        IdeLog.logError(Activator.getDefault(), Messages.getString("FirefoxBrowser.Cannot_Interact_With_Browser"), e); //$NON-NLS-1$
     }
 }
