@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /*
-//@line 38 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\extensions\src\nsAddonRepository.js"
+//@line 38 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\extensions\src\nsAddonRepository.js"
 */
 
 const Cc = Components.classes;

@@ -4,7 +4,7 @@ Bundle-Vendor: %Bundle-Vendor
 Bundle-Name: %Bundle-Name
 Bundle-SymbolicName: org.mozilla.xulrunner.macosx;singleton:=true
 Eclipse-BundleShape: dir
-Bundle-Version: 1.9.1.0
+Bundle-Version: 1.9.1.11
 Eclipse-PlatformFilter: (osgi.os=macosx)
 Bundle-localization: plugin
 Bundle-ClassPath: .

@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-//@line 41 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
+//@line 41 "e:\builds\moz2_slave\xulrunner_win32_build\build\xulrunner\setup\nsXULAppInstall.js"
 
 const nsIFile             = Components.interfaces.nsIFile;
 const nsIINIParser        = Components.interfaces.nsIINIParser;
@@ -193,11 +193,11 @@ const AppInstall = {
     catch (e) { }
 
     if (aDirectory == null) {
-//@line 235 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
+//@line 235 "e:\builds\moz2_slave\xulrunner_win32_build\build\xulrunner\setup\nsXULAppInstall.js"
       aDirectory = getDirectoryKey("ProgF");
       if (vendor)
         aDirectory.append(vendor);
-//@line 251 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
+//@line 251 "e:\builds\moz2_slave\xulrunner_win32_build\build\xulrunner\setup\nsXULAppInstall.js"
     }
     else {
       aDirectory = aDirectory.clone();
@@ -208,9 +208,9 @@ const AppInstall = {
     }
 
     if (aLeafName == "") {
-//@line 265 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
+//@line 265 "e:\builds\moz2_slave\xulrunner_win32_build\build\xulrunner\setup\nsXULAppInstall.js"
       aLeafName = appName;
-//@line 270 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
+//@line 270 "e:\builds\moz2_slave\xulrunner_win32_build\build\xulrunner\setup\nsXULAppInstall.js"
     }
 
     aDirectory.append(aLeafName);
@@ -218,14 +218,14 @@ const AppInstall = {
       aDirectory.create(nsIFile.DIRECTORY_TYPE, 0755);
     }
 
-//@line 341 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
+//@line 341 "e:\builds\moz2_slave\xulrunner_win32_build\build\xulrunner\setup\nsXULAppInstall.js"
     extractor.copyTo(aDirectory);
 
     var xulrunnerBinary = getDirectoryKey("XCurProcD");
     xulrunnerBinary.append("xulrunner-stub.exe");
 
     xulrunnerBinary.copyTo(aDirectory, appName.toLowerCase() + ".exe");
-//@line 348 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\xulrunner\setup\nsXULAppInstall.js"
+//@line 348 "e:\builds\moz2_slave\xulrunner_win32_build\build\xulrunner\setup\nsXULAppInstall.js"
   }
 };
 

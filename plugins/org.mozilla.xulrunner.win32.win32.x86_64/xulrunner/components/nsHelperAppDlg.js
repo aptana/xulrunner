@@ -1,5 +1,5 @@
 /*
-//@line 45 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 45 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
 */
 
 /* This file implements the nsIHelperAppLauncherDialog interface.
@@ -254,7 +254,7 @@ nsUnknownContentTypeDialog.prototype = {
 
       this.makeFileUnique(aLocalFile);
 
-//@line 300 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 300 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
       let ext;
       try {
         // We can fail here if there's no primary extension set
@@ -272,7 +272,7 @@ nsUnknownContentTypeDialog.prototype = {
         f.remove(false);
         this.makeFileUnique(aLocalFile);
       }
-//@line 318 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 318 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
 
       return aLocalFile;
     },
@@ -445,7 +445,7 @@ nsUnknownContentTypeDialog.prototype = {
         // want users to be able to autodownload .exe files. 
         var rememberChoice = this.dialogElement("rememberChoice");
 
-//@line 509 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 509 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
         if (shouldntRememberChoice) {
           rememberChoice.checked = false;
           rememberChoice.disabled = true;
@@ -585,7 +585,7 @@ nsUnknownContentTypeDialog.prototype = {
     // Returns true if opening the default application makes sense.
     openWithDefaultOK: function() {
         // The checking is different on Windows...
-//@line 649 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 649 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
         // Windows presents some special cases.
         // We need to prevent use of "system default" when the file is
         // executable (so the user doesn't launch nasty programs downloaded
@@ -595,7 +595,7 @@ nsUnknownContentTypeDialog.prototype = {
         
         //  Default is Ok if the file isn't executable (and vice-versa).
         return !this.mLauncher.targetFileIsExecutable;
-//@line 664 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 664 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
     },
     
     // Set "default" application description field.
@@ -616,9 +616,9 @@ nsUnknownContentTypeDialog.prototype = {
 
     // getPath:
     getPath: function (aFile) {
-//@line 687 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 687 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
       return aFile.path;
-//@line 689 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 689 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
     },
 
     // initAppAndSaveToDiskValues:
@@ -660,9 +660,9 @@ nsUnknownContentTypeDialog.prototype = {
         otherHandler.setAttribute("path",
                                   this.getPath(this.chosenApp.executable));
 
-//@line 734 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 734 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
         otherHandler.label = this.chosenApp.executable.leafName;
-//@line 736 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 736 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
         otherHandler.hidden = false;
       }
 
@@ -850,7 +850,7 @@ nsUnknownContentTypeDialog.prototype = {
           // for the file to be saved to to pass to |saveToDisk| - otherwise
           // we must ask the user to pick a save name.
 
-//@line 937 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 937 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
 
           // see @notify
           // we cannot use opener's setTimeout, see bug 420405
@@ -905,20 +905,20 @@ nsUnknownContentTypeDialog.prototype = {
     // Retrieve the pretty description from the file
     getFileDisplayName: function getFileDisplayName(file)
     { 
-//@line 992 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 992 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
         if (file instanceof Components.interfaces.nsILocalFileWin) {
           try {
             return file.getVersionInfoField("FileDescription");
           } catch (ex) {
           }
         }
-//@line 999 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 999 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
         return file.leafName;
     },
 
     // chooseApp:  Open file picker and prompt user for application.
     chooseApp: function() {
-//@line 1005 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 1005 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
     // Protect against the lack of an extension    
     var fileExtension = "";
     try {
@@ -983,7 +983,7 @@ nsUnknownContentTypeDialog.prototype = {
         openHandler.selectedItem = this.dialogElement(lastSelectedID);
     }
 
-//@line 1115 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
+//@line 1115 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\downloads\src\nsHelperAppDlg.js.in"
     },
 
     // Turn this on to get debugging messages.

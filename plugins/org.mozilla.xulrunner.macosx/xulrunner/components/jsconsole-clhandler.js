@@ -1,4 +1,4 @@
-//@line 41 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/components/console/jsconsole-clhandler.js"
+//@line 41 "/builds/moz2_slave/xulrunner_macosx_build/build/toolkit/components/console/jsconsole-clhandler.js"
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");

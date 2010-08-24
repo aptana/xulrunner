@@ -362,6 +362,9 @@ LoginManager.prototype = {
 
 
         handleEvent : function (event) {
+            if (!event.isTrusted)
+                return;
+
             this._pwmgr.log("domEventListener: got event " + event.type);
 
             switch (event.type) {
@@ -386,9 +389,13 @@ LoginManager.prototype = {
                     var [usernameField, passwordField, ignored] =
                         this._pwmgr._getFormFields(acForm, false);
                     if (usernameField == acInputField && passwordField) {
+                        let oldValue = passwordField.value;
                         // Clobber any existing password.
                         passwordField.value = "";
+                        let [didFillForm, foundLogins] =
                         this._pwmgr._fillForm(acForm, true, true, null);
+                        if (!didFillForm)
+                            passwordField.value = oldValue;
                     } else {
                         this._pwmgr.log("Oops, form changed before AC invoked");
                     }
@@ -1255,13 +1262,17 @@ LoginManager.prototype = {
      */
     _notifyFoundLogins : function (didntFillReason, usernameField,
                                    passwordField, foundLogins, selectedLogin) {
+        // We need .setProperty(), which is a method on the original
+        // nsIWritablePropertyBag. Strangley enough, nsIWritablePropertyBag2
+        // doesn't inherit from that, so the additional QI is needed.
         let formInfo = Cc["@mozilla.org/hash-property-bag;1"].
-                       createInstance(Ci.nsIWritablePropertyBag2);
+                       createInstance(Ci.nsIWritablePropertyBag2).
+                       QueryInterface(Ci.nsIWritablePropertyBag);
 
         formInfo.setPropertyAsACString("didntFillReason", didntFillReason);
         formInfo.setPropertyAsInterface("usernameField", usernameField);
         formInfo.setPropertyAsInterface("passwordField", passwordField);
-        formInfo.setPropertyAsInterface("foundLogins", foundLogins.concat());
+        formInfo.setProperty("foundLogins", foundLogins.concat());
         formInfo.setPropertyAsInterface("selectedLogin", selectedLogin);
 
         this._observerService.notifyObservers(formInfo,

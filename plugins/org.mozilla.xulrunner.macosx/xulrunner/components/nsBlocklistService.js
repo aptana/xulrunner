@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /*
-//@line 41 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
+//@line 41 "/builds/moz2_slave/xulrunner_macosx_build/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
 */
 
 const Cc = Components.classes;
@@ -52,7 +52,7 @@ var gBlocklistEnabled = true;
 var gBlocklistLevel = DEFAULT_LEVEL;
 
 // shared code for suppressing bad cert dialogs
-//@line 41 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/mozapps/shared/src/badCertHandler.js"
+//@line 41 "/builds/moz2_slave/xulrunner_macosx_build/build/toolkit/mozapps/shared/src/badCertHandler.js"
 
 /**
  * Only allow built-in certs for HTTPS connections.  See bug 340198.
@@ -129,7 +129,7 @@ BadCertHandler.prototype = {
     return this;
   }
 };
-//@line 93 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
+//@line 93 "/builds/moz2_slave/xulrunner_macosx_build/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
 
 /**
  * Logs a string to the error console.
@@ -390,7 +390,7 @@ function Blocklist() {
     gOSVersion = encodeURIComponent(osVersion);
   }
 
-//@line 354 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
+//@line 354 "/builds/moz2_slave/xulrunner_macosx_build/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
   // Mac universal build should report a different ABI than either macppc
   // or mactel.
   var macutils = Components.classes["@mozilla.org/xpcom/mac-utils;1"]
@@ -398,7 +398,7 @@ function Blocklist() {
 
   if (macutils.isUniversalBinary)
     gABI = "Universal-gcc3";
-//@line 362 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
+//@line 362 "/builds/moz2_slave/xulrunner_macosx_build/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
 }
 
 Blocklist.prototype = {
@@ -641,7 +641,7 @@ Blocklist.prototype = {
   },
 
   /**
-//@line 653 "/builds/moz2_slave/mozilla-1.9.1-macosx-xulrunner/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
+//@line 653 "/builds/moz2_slave/xulrunner_macosx_build/build/toolkit/mozapps/extensions/src/nsBlocklistService.js"
    */
 
   _loadBlocklistFromFile: function(file) {

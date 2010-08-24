@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-Vendor: %Bundle-Vendor
 Eclipse-BundleShape: dir
-Bundle-Version: 1.9.1.0
+Bundle-Version: 1.9.1.11
 Eclipse-PlatformFilter: (& (osgi.ws=win32) (osgi.os=win32)  (osgi.arch
  =x86))
 Bundle-localization: plugin

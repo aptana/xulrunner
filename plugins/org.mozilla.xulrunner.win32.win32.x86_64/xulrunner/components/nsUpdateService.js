@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /*
-//@line 44 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 44 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
 */
 
 const Cc = Components.classes;
@@ -38,10 +38,10 @@ const URI_UPDATE_NS             = "http://www.mozilla.org/2005/app-update";
 
 const KEY_APPDIR          = "XCurProcD";
 const KEY_GRED            = "GreD";
-//@line 82 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 82 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
 const KEY_UPDROOT         = "UpdRootD";
 const KEY_UAPPDATA        = "UAppData";
-//@line 85 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 85 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
 
 const DIR_UPDATES         = "updates";
 const FILE_UPDATE_STATUS  = "update.status";
@@ -89,11 +89,10 @@ var gABI        = null;
 var gOSVersion  = null;
 var gLocale     = null;
 var gConsole    = null;
-var gCanUpdate  = null;
 var gLogEnabled = { };
 
 // shared code for suppressing bad cert dialogs
-//@line 41 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\shared\src\badCertHandler.js"
+//@line 41 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\shared\src\badCertHandler.js"
 
 /**
  * Only allow built-in certs for HTTPS connections.  See bug 340198.
@@ -170,7 +169,7 @@ BadCertHandler.prototype = {
     return this;
   }
 };
-//@line 137 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 136 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
 
 /**
  * Logs a string to the error console.
@@ -185,6 +184,143 @@ function LOG(module, string) {
       gConsole.logStringMessage("AUS:SVC " + module + ":" + string);
   }
 }
+
+__defineGetter__("gCanCheckForUpdates", function () {
+  delete this.gCanCheckForUpdates;
+  // If the administrator has locked the app update functionality
+  // OFF - this is not just a user setting, so disable the manual
+  // UI too.
+  var enabled = getPref("getBoolPref", PREF_APP_UPDATE_ENABLED, true);
+  if (!enabled && gPref.prefIsLocked(PREF_APP_UPDATE_ENABLED)) {
+    LOG("UpdateService", "gCanCheckForUpdates - unable to check for " +
+        "updates, disabled by pref");
+    return gCanCheckForUpdates = false;
+  }
+
+  // If we don't know the binary platform we're updating, we can't update.
+  if (!gABI) {
+    LOG("UpdateService", "gCanCheckForUpdates - unable to check for " +
+        "updates, unknown ABI");
+    return gCanCheckForUpdates = false;
+  }
+
+  // If we don't know the OS version we're updating, we can't update.
+  if (!gOSVersion) {
+    LOG("UpdateService", "gCanCheckForUpdates - unable to check for " +
+        "updates, unknown OS version");
+    return gCanCheckForUpdates = false;
+  }
+
+  LOG("UpdateService", "gCanCheckForUpdates - able to check for updates");
+  return gCanCheckForUpdates = true;
+});
+
+__defineGetter__("gCanApplyUpdates", function () {
+  delete this.gCanApplyUpdates;
+  try {
+    var appDirFile = getUpdateFile([FILE_PERMS_TEST]);
+    LOG("UpdateService", "gCanApplyUpdates - testing " + appDirFile.path);
+    if (!appDirFile.exists()) {
+      appDirFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, PERMS_FILE);
+      appDirFile.remove(false);
+    }
+    var updateDir = getUpdatesDir();
+    var upDirFile = updateDir.clone();
+    upDirFile.append(FILE_PERMS_TEST);
+    LOG("UpdateService", "gCanApplyUpdates - testing " + upDirFile.path);
+    if (!upDirFile.exists()) {
+      upDirFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, PERMS_FILE);
+      upDirFile.remove(false);
+    }
+//@line 199 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+    var sysInfo = Cc["@mozilla.org/system-info;1"].
+                  getService(Ci.nsIPropertyBag2);
+
+    // Example windowsVersion:  Windows XP == 5.1
+    var windowsVersion = sysInfo.getProperty("version");
+    LOG("UpdateService", "gCanApplyUpdates - windowsVersion = " +
+        windowsVersion);
+
+    // For Vista, updates can be performed to a location requiring 
+    // admin privileges by requesting elevation via the UAC prompt when 
+    // launching updater.exe if the appDir is under the Program Files 
+    // directory (e.g. C:\Program Files\) and UAC is turned on and 
+    // we can elevate (e.g. user has a split token)
+    //
+    // Note: this does note attempt to handle the case where UAC is
+    // turned on and the installation directory is in a restricted
+    // location that requires admin privileges to update other than 
+    // Program Files.
+
+    var userCanElevate = false;
+
+    if (parseFloat(windowsVersion) >= 6) {
+      try {
+        var fileLocator = Cc["@mozilla.org/file/directory_service;1"].
+                          getService(Ci.nsIProperties);
+        // KEY_UPDROOT will fail and throw an exception if
+        // appDir is not under the Program Files, so we rely on that
+        var dir = fileLocator.get(KEY_UPDROOT, Ci.nsIFile);
+        // appDir is under Program Files, so check if the user can elevate
+        userCanElevate = gApp.QueryInterface(Ci.nsIWinAppHelper).
+                         userCanElevate;
+        LOG("UpdateService", "gCanApplyUpdates - on Vista, userCanElevate: " +
+            userCanElevate);
+      }
+      catch (ex) {
+        // When the installation directory is not under Program Files,
+        // fall through to checking if write access to the 
+        // installation directory is available.
+        LOG("UpdateService", "gCanApplyUpdates - on Vista, appDir is not " +
+            "under Program Files");
+      }
+    }
+
+    // On Windows, we no longer store the update under the app dir
+    // if the app dir is under C:\Program Files.
+    //
+    // If we are on Windows (including Vista, if we can't elevate)
+    // we need to check that
+    // we can create and remove files from the actual app directory
+    // (like C:\Program Files\Mozilla Firefox).  If we can't
+    // (because this user is not an adminstrator, for example)
+    // canUpdate() should return false.
+    //
+    // For Vista, we perform this check to enable updating the 
+    // application when the user has write access to the installation 
+    // directory under the following scenarios:
+    // 1) the installation directory is not under Program Files 
+    //    (e.g. C:\Program Files)
+    // 2) UAC is turned off
+    // 3) UAC is turned on and the user is not an admin 
+    //    (e.g. the user does not have a split token)
+    // 4) UAC is turned on and the user is already elevated,
+    //    so they can't be elevated again.
+    if (!userCanElevate) {
+      // if we're unable to create the test file
+      // the code below will throw an exception 
+      var actualAppDir = getDir(KEY_APPDIR, []);
+      var actualAppDirFile = actualAppDir.clone();
+      actualAppDirFile.append(FILE_PERMS_TEST);
+      LOG("UpdateService", "gCanApplyUpdates - testing " +
+          actualAppDirFile.path);
+      if (!actualAppDirFile.exists()) {
+        actualAppDirFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, PERMS_FILE);
+        actualAppDirFile.remove(false);
+      }
+    }
+//@line 276 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+  }
+  catch (e) {
+     LOG("UpdateService", "gCanApplyUpdates - unable to apply update. " +
+         "Exception: " + e);
+    // No write privileges to install directory
+    return gCanApplyUpdates = false;
+  }
+
+  LOG("UpdateService", "gCanCheckForUpdates - able to apply updates");
+  return gCanApplyUpdates = true;
+});
 
 /**
  * Convert a string containing binary values to hex.
@@ -280,14 +416,14 @@ function getDirInternal(key, pathArray, shouldCreate, update) {
   var fileLocator = Cc["@mozilla.org/file/directory_service;1"].
                     getService(Ci.nsIProperties);
   var dir = fileLocator.get(key, Ci.nsIFile);
-//@line 247 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 383 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
   if (update) {
     try {
       dir = fileLocator.get(KEY_UPDROOT, Ci.nsIFile);
     } catch (e) {
     }
   }
-//@line 254 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 390 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
   for (var i = 0; i < pathArray.length; ++i) {
     dir.append(pathArray[i]);
     if (shouldCreate && !dir.exists())
@@ -394,12 +530,12 @@ function getUpdatesDir(key) {
     updateDir = fileLocator.get(key, Ci.nsIFile);
   else {
     updateDir = fileLocator.get(KEY_APPDIR, Ci.nsIFile);
-//@line 361 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 497 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
     try {
       updateDir = fileLocator.get(KEY_UPDROOT, Ci.nsIFile);
     } catch (e) {
     }
-//@line 366 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 502 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
   }
   updateDir.append(DIR_UPDATES);
   updateDir.append("0");
@@ -444,7 +580,7 @@ function writeStatusFile(dir, state) {
 }
 
 /**
-//@line 424 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 560 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
  */
 function writeVersionFile(dir, version) {
   var versionFile = dir.clone();
@@ -1096,7 +1232,7 @@ function UpdateService() {
     gOSVersion = encodeURIComponent(osVersion);
   }
 
-//@line 1084 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 1220 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
 
   // Start the update timer only after a profile has been selected so that the
   // appropriate values for the update check are read from the user's profile.
@@ -1203,8 +1339,11 @@ UpdateService.prototype = {
     // Detect installation failures and notify
 
     // Bail out if we don't have appropriate permissions
-    if (!this.canUpdate)
+    if (!this.canUpdate) {
+      LOG("UpdateService:_postUpdateProcessing - unable to update");
       return;
+    }
+ 
 
     var status = readStatusFile(getUpdatesDir());
 
@@ -1213,7 +1352,7 @@ UpdateService.prototype = {
       status = null;
 
     var updRootKey = null;
-//@line 1201 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 1340 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
     function findPreviousUpdate(key) {
       var updateDir = getUpdatesDir(key);
       if (updateDir.exists()) {
@@ -1234,7 +1373,7 @@ UpdateService.prototype = {
     // required to migrate from older versions.
     if (status == null)
       findPreviousUpdate(KEY_APPDIR);
-//@line 1222 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 1361 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
 
     if (status == STATE_DOWNLOADING) {
       LOG("UpdateService", "_postUpdateProcessing - patch found in " +
@@ -1266,12 +1405,12 @@ UpdateService.prototype = {
         um.activeUpdate = update;
 
         prompter.showUpdateInstalled();
-//@line 1257 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 1396 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
         // Perform platform-specific post-update processing.
         if (POST_UPDATE_CONTRACTID in Cc) {
           Cc[POST_UPDATE_CONTRACTID].createInstance(Ci.nsIRunnable).run();
         }
-//@line 1262 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 1401 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
         // Done with this update. Clean it up.
         cleanupActiveUpdate(updRootKey);
       }
@@ -1394,6 +1533,9 @@ UpdateService.prototype = {
     var vc = Cc["@mozilla.org/xpcom/version-comparator;1"].
              getService(Ci.nsIVersionComparator);
     for (var i = 0; i < updates.length; ++i) {
+      // Ignore updates for older versions of the application
+      if (vc.compare(updates[i].extensionVersion, gApp.version) < 0)
+        continue;
       if (updates[i].type == "major" &&
           vc.compare(newestMajor.version, updates[i].version) <= 0)
         majorUpdate = newestMajor = updates[i];
@@ -1445,12 +1587,27 @@ UpdateService.prototype = {
     }
 
     /**
-//@line 1447 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 1589 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
      */
 
     // Encode version since it could be a non-ascii string (bug 359093)
     var neverPrefName = PREF_UPDATE_NEVER_BRANCH +
                         encodeURIComponent(update.version);
+
+    if (!gCanApplyUpdates) {
+      if (getPref("getBoolPref", neverPrefName, false)) {
+        LOG("Checker", "_selectAndInstallUpdate - the user is unable to " +
+            "apply updates. Not prompting because the preference " +
+            neverPrefName + " is true");
+      }
+      else {
+        LOG("Checker", "_selectAndInstallUpdate - the user is unable to " +
+            "apply updates... prompting");
+        this._showPrompt(update);
+      }
+      return;
+    }
+
     if (update.type == "major" &&
         getPref("getBoolPref", neverPrefName, false)) {
       LOG("Checker", "_selectAndInstallUpdate - not prompting because this " +
@@ -1459,7 +1616,7 @@ UpdateService.prototype = {
     }
 
     /**
-//@line 1476 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 1633 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
      */
     if (update.type == "major") {
       LOG("Checker", "_selectAndInstallUpdate - prompting because it is a " +
@@ -1538,7 +1695,7 @@ UpdateService.prototype = {
 
     if (currentAddons.length > 0) {
       /**
-//@line 1572 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
+//@line 1729 "e:\builds\moz2_slave\xulrunner_win32_build\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
        */
       this._incompatAddonsCount = currentAddons.length;
       LOG("UpdateService", "_checkAddonCompatibility - checking for " +
@@ -1569,7 +1726,7 @@ UpdateService.prototype = {
    * See nsIExtensionManager.idl
    */
   onUpdateEnded: function AUS_onUpdateEnded() {
-    if (this._incompatAddonsCount > 0) {
+    if (this._incompatAddonsCount > 0 || !gCanApplyUpdates) {
       LOG("Checker", "onUpdateEnded - prompting because there are " +
           "incompatible add-ons");
       this._showPrompt(this._update);
@@ -1621,129 +1778,21 @@ UpdateService.prototype = {
    * See nsIUpdateService.idl
    */
   get canUpdate() {
-    if (gCanUpdate !== null)
-      return gCanUpdate;
+    return gCanApplyUpdates && gCanCheckForUpdates;
+  },
 
-    try {
-      var appDirFile = getUpdateFile([FILE_PERMS_TEST]);
-      LOG("UpdateService", "canUpdate - testing " + appDirFile.path);
-      if (!appDirFile.exists()) {
-        appDirFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, PERMS_FILE);
-        appDirFile.remove(false);
-      }
-      var updateDir = getUpdatesDir();
-      var upDirFile = updateDir.clone();
-      upDirFile.append(FILE_PERMS_TEST);
-      LOG("UpdateService", "canUpdate - testing " + upDirFile.path);
-      if (!upDirFile.exists()) {
-        upDirFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, PERMS_FILE);
-        upDirFile.remove(false);
-      }
-//@line 1673 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
-      var sysInfo = Cc["@mozilla.org/system-info;1"].
-                    getService(Ci.nsIPropertyBag2);
+  /**
+   * See nsIUpdateService.idl
+   */
+  get canCheckForUpdates() {
+    return gCanCheckForUpdates;
+  },
 
-      // Example windowsVersion:  Windows XP == 5.1
-      var windowsVersion = sysInfo.getProperty("version");
-      LOG("UpdateService", "canUpdate - windowsVersion = " + windowsVersion);
-
-      // For Vista, updates can be performed to a location requiring 
-      // admin privileges by requesting elevation via the UAC prompt when 
-      // launching updater.exe if the appDir is under the Program Files 
-      // directory (e.g. C:\Program Files\) and UAC is turned on and 
-      // we can elevate (e.g. user has a split token)
-      //
-      // Note: this does note attempt to handle the case where UAC is
-      // turned on and the installation directory is in a restricted
-      // location that requires admin privileges to update other than 
-      // Program Files.
-
-      var userCanElevate = false;
-
-      if (parseFloat(windowsVersion) >= 6) {
-        try {
-          var fileLocator = Cc["@mozilla.org/file/directory_service;1"].
-                            getService(Ci.nsIProperties);
-          // KEY_UPDROOT will fail and throw an exception if
-          // appDir is not under the Program Files, so we rely on that
-          var dir = fileLocator.get(KEY_UPDROOT, Ci.nsIFile);
-          // appDir is under Program Files, so check if the user can elevate
-          userCanElevate = gApp.QueryInterface(Ci.nsIWinAppHelper).
-                           userCanElevate;
-          LOG("UpdateService", "canUpdate - on Vista, userCanElevate: " +
-              userCanElevate);
-        }
-        catch (ex) {
-          // When the installation directory is not under Program Files,
-          // fall through to checking if write access to the 
-          // installation directory is available.
-          LOG("UpdateService", "canUpdate - on Vista, appDir is not under " +
-              "Program Files");
-        }
-      }
-
-      // On Windows, we no longer store the update under the app dir
-      // if the app dir is under C:\Program Files.
-      //
-      // If we are on Windows (including Vista, if we can't elevate)
-      // we need to check that
-      // we can create and remove files from the actual app directory
-      // (like C:\Program Files\Mozilla Firefox).  If we can't
-      // (because this user is not an adminstrator, for example)
-      // canUpdate() should return false.
-      //
-      // For Vista, we perform this check to enable updating the 
-      // application when the user has write access to the installation 
-      // directory under the following scenarios:
-      // 1) the installation directory is not under Program Files 
-      //    (e.g. C:\Program Files)
-      // 2) UAC is turned off
-      // 3) UAC is turned on and the user is not an admin 
-      //    (e.g. the user does not have a split token)
-      // 4) UAC is turned on and the user is already elevated,
-      //    so they can't be elevated again.
-      if (!userCanElevate) {
-        // if we're unable to create the test file
-        // the code below will throw an exception 
-        var actualAppDir = getDir(KEY_APPDIR, []);
-        var actualAppDirFile = actualAppDir.clone();
-        actualAppDirFile.append(FILE_PERMS_TEST);
-        LOG("UpdateService", "canUpdate - testing " + actualAppDirFile.path);
-        if (!actualAppDirFile.exists()) {
-          actualAppDirFile.create(Ci.nsILocalFile.NORMAL_FILE_TYPE, PERMS_FILE);
-          actualAppDirFile.remove(false);
-        }
-      }
-//@line 1748 "e:\builds\moz2_slave\mozilla-1.9.1-win32-xulrunner\build\toolkit\mozapps\update\src\nsUpdateService.js.in"
-    }
-    catch (e) {
-       LOG("UpdateService", "canUpdate - unable to update. Exception: " + e);
-      // No write privileges to install directory
-      return gCanUpdate = false;
-    }
-    // If the administrator has locked the app update functionality
-    // OFF - this is not just a user setting, so disable the manual
-    // UI too.
-    var enabled = getPref("getBoolPref", PREF_APP_UPDATE_ENABLED, true);
-    if (!enabled && gPref.prefIsLocked(PREF_APP_UPDATE_ENABLED)) {
-      LOG("UpdateService", "canUpdate - unable to update, disabled by pref");
-      return gCanUpdate = false;
-    }
-
-    // If we don't know the binary platform we're updating, we can't update.
-    if (!gABI) {
-      LOG("UpdateService", "canUpdate - unable tp update, unknown ABI");
-      return gCanUpdate = false;
-    }
-
-    // If we don't know the OS version we're updating, we can't update.
-    if (!gOSVersion) {
-      LOG("UpdateService", "canUpdate unable to update, unknown OS version");
-      return gCanUpdate = false;
-    }
-
-    LOG("UpdateService", "canUpdate - able to update");
-    return gCanUpdate = true;
+  /**
+   * See nsIUpdateService.idl
+   */
+  get canApplyUpdates() {
+    return gCanApplyUpdates;
   },
 
   /**
@@ -1781,9 +1830,9 @@ UpdateService.prototype = {
              getService(Ci.nsIVersionComparator);
     // Don't download the update if the update's version is less than the
     // current application's version.
-    if (update.version && vc.compare(update.version, ai.version) < 0) {
+    if (update.extensionVersion && vc.compare(update.extensionVersion, ai.version) < 0) {
       LOG("UpdateService", "downloadUpdate - removing update for previous " +
-          "application version " + update.version);
+          "application version " + update.extensionVersion);
       cleanupActiveUpdate();
       return STATE_NONE;
     }
@@ -1821,7 +1870,9 @@ UpdateService.prototype = {
   implementationLanguage: Ci.nsIProgrammingLanguage.JAVASCRIPT,
   getHelperForLanguage: function(language) null,
   getInterfaces: function AUS_getInterfaces(count) {
-    var interfaces = [Ci.nsIApplicationUpdateService, Ci.nsITimerCallback,
+    var interfaces = [Ci.nsIApplicationUpdateService,
+                      Ci.nsIApplicationUpdateService2,
+                      Ci.nsITimerCallback,
                       Ci.nsIObserver];
     count.value = interfaces.length;
     return interfaces;
@@ -1833,6 +1884,7 @@ UpdateService.prototype = {
   _xpcom_categories: [{ category: "app-startup", service: true }],
   _xpcom_factory: UpdateServiceFactory,
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIApplicationUpdateService,
+                                         Ci.nsIApplicationUpdateService2,
                                          Ci.nsIAddonUpdateCheckListener,
                                          Ci.nsITimerCallback,
                                          Ci.nsIObserver])
@@ -2276,11 +2328,8 @@ Checker.prototype = {
    */
   _enabled: true,
   get enabled() {
-    var aus = Cc["@mozilla.org/updates/update-service;1"].
-              getService(Ci.nsIApplicationUpdateService);
-    var enabled = getPref("getBoolPref", PREF_APP_UPDATE_ENABLED, true) &&
-                  aus.canUpdate && this._enabled;
-    return enabled;
+    return getPref("getBoolPref", PREF_APP_UPDATE_ENABLED, true) &&
+           gCanCheckForUpdates && this._enabled;
   },
 
   /**
@@ -2732,7 +2781,8 @@ Downloader.prototype = {
       um.activeUpdate = null;
     }
     else {
-      um.activeUpdate.state = state;
+      if (um.activeUpdate)
+        um.activeUpdate.state = state;
     }
     um.saveUpdates();
 
@@ -3105,6 +3155,20 @@ UpdatePrompt.prototype = {
       }
     };
 
+    // bug 534090 - show the UI for update available notifications when the
+    // the system has been idle for at least IDLE_TIME without displaying an
+    // alert notification.
+    if (page == "updatesavailable") {
+      var idleService = Cc["@mozilla.org/widget/idleservice;1"].
+                        getService(Ci.nsIIdleService);
+
+      const IDLE_TIME = getPref("getIntPref", PREF_APP_UPDATE_IDLETIME, 60);
+      if (idleService.idleTime / 1000 >= IDLE_TIME) {
+        this._showUI(parent, uri, features, name, page, update);
+        return;
+      }
+    }
+
     try {
       var notifier = Cc["@mozilla.org/alerts-service;1"].
                      getService(Ci.nsIAlertsService);
@@ -3119,6 +3183,12 @@ UpdatePrompt.prototype = {
     observer.service = Cc["@mozilla.org/observer-service;1"].
                        getService(Ci.nsIObserverService);
     observer.service.addObserver(observer, "quit-application", false);
+
+    // bug 534090 - show the UI when idle for update available notifications.
+    if (page == "updatesavailable") {
+      this._showUIWhenIdle(parent, uri, features, name, page, update);
+      return;
+    }
 
     // Give the user x seconds to react before showing the big UI
     var promptWaitTime = getPref("getIntPref", PREF_APP_UPDATE_PROMPTWAITTIME, 43200);
