@@ -77,7 +77,7 @@ public class FirefoxBrowser extends ContributedBrowser
 	/**
 	 * XULRUNNER_MAC_PLUGIN
 	 */
-	public static final String XULRUNNER_MAC_PLUGIN = "org.mozilla.xulrunner.carbon.macosx"; //$NON-NLS-1$
+	public static final String XULRUNNER_MAC_PLUGIN = "org.mozilla.xulrunner.macosx"; //$NON-NLS-1$
 
 	/**
 	 * XULRUNNER_WIN32_PLUGIN
@@ -91,7 +91,12 @@ public class FirefoxBrowser extends ContributedBrowser
 
 	static
 	{
-		FirefoxExtensionsSupport.init();
+		// It appears this call is no longer necessary on Windows as the SWT Mozilla in Eclipse 3.5+ is performing similar
+		// initialization tasks, and calling it was causing a crash when initializing the profile
+		if (!Platform.OS_WIN32.equals(Platform.getOS()))
+		{
+			FirefoxExtensionsSupport.init();
+		}
 	}
 
 	private Composite errors;
@@ -228,14 +233,16 @@ public class FirefoxBrowser extends ContributedBrowser
 		{
 			IdeLog.logError(Activator.getDefault(), Messages.getString("FirefoxBrowser.Error_Setting_Path"), e); //$NON-NLS-1$
 		}
-		// Disable Java
-		nsIPrefService prefService = (nsIPrefService) Mozilla.getInstance().getServiceManager().getServiceByContractID("@mozilla.org/preferences-service;1", nsIPrefService.NS_IPREFSERVICE_IID);
-		nsIPrefBranch prefBranch = prefService.getBranch("");
-		prefBranch.setBoolPref("security.enable_java", 0);
 
 		browser = new Browser(parent, SWT.MOZILLA);
 		browser.addProgressListener(progressListener);
 		browser.addOpenWindowListener(openWindowListener);
+		
+		// Disable Java
+		nsIPrefService prefService = (nsIPrefService) Mozilla.getInstance().getServiceManager().getServiceByContractID("@mozilla.org/preferences-service;1", nsIPrefService.NS_IPREFSERVICE_IID); //$NON-NLS-1$
+		nsIPrefBranch prefBranch = prefService.getBranch(""); //$NON-NLS-1$
+		prefBranch.setBoolPref("security.enable_java", 0); //$NON-NLS-1$
+
 		if (Platform.OS_MACOSX.equals(Platform.getOS())) {
 			nsIWebBrowserSetup webBrowserSetup = (nsIWebBrowserSetup) internalGetWebBrowser().queryInterface(nsIWebBrowserSetup.NS_IWEBBROWSERSETUP_IID);
 			if (webBrowserSetup != null) {
