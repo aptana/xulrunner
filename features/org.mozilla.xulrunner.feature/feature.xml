@@ -2,7 +2,7 @@
 <feature
       id="org.mozilla.xulrunner.feature"
       label="Mozilla Xulrunner"
-      version="1.9.1.0"
+      version="1.9.1.11"
       provider-name="Mozilla.org">
 
    <description url="http://developer.mozilla.org/en/docs/XULRunner">
